@@ -16,19 +16,18 @@ On a fresh session or after a compact: read `context/index.md` first (read-order
 
 ## Project
 
-**[PROJECT NAME]** -- [ONE-LINE DESCRIPTION OF WHAT THIS PROJECT IS, ITS TECH STACK, AND ITS PRIMARY DELIVERABLES].
+**Fleetcom (`fleetcom-mcp`)** -- Shared coordination data plane for autonomous AI agents across the fleet. Written in Go, backed by pure-Go SQLite (modernc.org/sqlite, CGO-free), exposing tasks/todos, calendar events, reminders, agent directory, and fleet policies over the Model Context Protocol (stdio transport).
 
-[OPTIONAL CONTEXT ABOUT AUDIENCE AND THE STANDARDS THAT FOLLOW FROM IT, e.g. "Open-source project with external users: safety, portability, stability matter." or "Internal service for [TEAM]; optimize for iteration speed."]
+Internal infrastructure for the fleet (Hermes and Claude Code); optimize for correctness, race-safety, zero external dependencies, and execution speed.
 
 ## Design Principles
 
-[ONE-LINE STATEMENT OF THE PROJECT'S GUIDING PHILOSOPHY, e.g. "Infrastructure, not a framework."]
+Coordination data plane you do not have to live in: lean, zero-daemon, pure-Go stdio.
 
-- **[PRINCIPLE]:** [what it means in practice].
-- **[PRINCIPLE]:** [explanation].
-- **[PRINCIPLE]:** [explanation].
-
-[List the handful of opinionated principles that should shape every design decision. Concrete, not platitudes; each specific enough to settle a real disagreement.]
+- **Race-Safe Atomic Claims:** All task claims enforce atomic compare-and-swap (`claimed_by IS NULL OR claim_expires_at < now`) directly in SQL so multiple concurrent agents never duplicate work.
+- **Fail-Safe Lease Expiry:** Claims carry an automatic lease expiry (`claim_expires_at`) so crashed agents release their tasks without human intervention.
+- **Zero Runtime Dependencies:** Standalone CGO-free static Go binary; zero background daemons, zero network ports, zero Python/Node venv requirements.
+- **RFC-5545 Compliance:** Calendar, todos, and reminders map cleanly to RFC-5545 iCalendar components.
 
 ## How I Work
 
