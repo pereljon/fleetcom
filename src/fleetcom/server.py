@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import functools
 import sqlite3
 from typing import Any
@@ -255,8 +256,19 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
     return mcp
 
 
+def _resolve_db_path(argv: list[str] | None = None) -> str:
+    parser = argparse.ArgumentParser(prog="fleetcom-mcp")
+    parser.add_argument(
+        "--db",
+        default=None,
+        help="Path to the fleetcom SQLite database (overrides FLEETCOM_DB_PATH)",
+    )
+    args = parser.parse_args(argv)
+    return args.db or db.default_db_path()
+
+
 def main() -> None:
-    conn = db.connect(db.default_db_path())
+    conn = db.connect(_resolve_db_path())
     db.migrate(conn)
     server = build_server(conn)
     server.run(transport="stdio")

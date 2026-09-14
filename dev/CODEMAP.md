@@ -12,4 +12,6 @@ Maintain: add a row when code lands; keep each purpose to one line.
 | `src/fleetcom/events.py` | event CRUD + `list_in_range` (start between two ISO timestamps) |
 | `src/fleetcom/contacts.py` | contact CRUD + `search` (substring match on name/tags, with LIKE-wildcard escaping) |
 | `src/fleetcom/agenda.py` | `today(conn)`: cross-entity aggregator combining `tasks.list(due_now=True)` and `events.list_in_range` for the current day |
-| `src/fleetcom/server.py` | `build_server(conn)` registers all 15 MCP tools as closures over one connection; `_anticipated` decorator converts anticipated storage errors (bad enum, CHECK violation, unknown field) into `ToolError` so callers see the real reason; `main()` is the `fleetcom-mcp` entry point |
+| `src/fleetcom/server.py` | `build_server(conn)` registers all 15 MCP tools as closures over one connection; `_anticipated` decorator converts anticipated storage errors (bad enum, CHECK violation, unknown field) into `ToolError` so callers see the real reason; `_resolve_db_path` handles `--db`/`FLEETCOM_DB_PATH` precedence; `main()` is the `fleetcom-mcp` entry point |
+| `skills/fleetcom/SKILL.md` | fleet-facing skill doc: fleetcom vs. memory/chat routing rule, task conventions (handles, owner="user" meaning, accept/reject), wiring notes |
+| `skills/fleetcom/references/tools.md` | one-line usage example per registered MCP tool, grepped from `server.py` rather than hand-counted |

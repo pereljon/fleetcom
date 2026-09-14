@@ -38,17 +38,19 @@ Reminders started as their own table and were folded into `tasks` after a design
 
 ### 1. Install
 
-Requires Python 3.11+.
+Requires Python 3.11+ (the `mcp` package itself needs >=3.10; this project's floor is a separate, deliberate choice). Install as a standalone tool, not from the development checkout — this pins the launcher's shebang to its own interpreter, so MCP client configs never depend on whatever `python3` happens to resolve to in their environment:
 
 ```bash
 git clone git@github.com-pereljon:pereljon/fleetcom.git
 cd fleetcom
-uv sync
+uv tool install --from . fleetcom
 ```
+
+This installs a `fleetcom-mcp` executable (typically `~/.local/bin/fleetcom-mcp`; run `uv tool list` to confirm the exact path on your machine). For local development instead, `uv sync` and run via `uv run fleetcom-mcp` from the checkout.
 
 ### 2. Connect Your Agents
 
-Fleetcom communicates over standard input/output (`stdio`).
+Fleetcom communicates over standard input/output (`stdio`). Point MCP clients at the **installed** launcher, not the dev checkout.
 
 #### Claude Code (`~/.claude.json`)
 
@@ -56,9 +58,8 @@ Fleetcom communicates over standard input/output (`stdio`).
 {
   "mcpServers": {
     "fleetcom": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/fleetcom", "fleetcom-mcp"],
-      "env": { "FLEETCOM_DB_PATH": "/path/to/fleetcom.db" }
+      "command": "/Users/jonathan/.local/bin/fleetcom-mcp",
+      "args": ["--db", "/Users/jonathan/Claude/-hermes/fleetcom.db"]
     }
   }
 }
@@ -69,13 +70,11 @@ Fleetcom communicates over standard input/output (`stdio`).
 ```yaml
 mcp_servers:
   fleetcom:
-    command: uv
-    args: ["run", "--directory", "/path/to/fleetcom", "fleetcom-mcp"]
-    env:
-      FLEETCOM_DB_PATH: /path/to/fleetcom.db
+    command: /Users/jonathan/.local/bin/fleetcom-mcp
+    args: ["--db", "/Users/jonathan/Claude/-hermes/fleetcom.db"]
 ```
 
-`FLEETCOM_DB_PATH` defaults to `~/Claude/-hermes/fleetcom.db` if unset.
+The database path can be set either way: `--db <path>` (shown above) or the `FLEETCOM_DB_PATH` env var — the flag wins if both are given. Defaults to `~/Claude/-hermes/fleetcom.db` if neither is set.
 
 ---
 
