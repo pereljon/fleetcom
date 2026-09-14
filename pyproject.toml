@@ -1,0 +1,26 @@
+[project]
+name = "fleetcom"
+version = "0.1.0"
+description = "Shared office primitives (tasks, reminders, events, contacts) for a fleet of AI agents, over MCP."
+authors = [
+    { name = "Jonathan Perel", email = "1195913+pereljon@users.noreply.github.com" }
+]
+requires-python = ">=3.11"
+dependencies = ["mcp>=1.0.0"]
+
+[project.scripts]
+fleetcom-mcp = "fleetcom.server:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.7",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.9,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

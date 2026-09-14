@@ -3,12 +3,16 @@
 Owns: open tasks and their status. Does NOT hold permanent facts or decisions (those live in dev/ docs and context/decisions.md).
 Maintain: update whenever a task is added, changes state, or completes.
 Entry format: `- [ ] task`  /  done: `- [x] task (done YYYY-MM-DD)`
-- [x] `internal/store` schema (agents, office_items, policies, activity_log) + Migrate (done 2026-09-13)
-- [x] office_items CRUD + atomic ClaimItem/ProgressItem/ReleaseItem/CompleteItem, agent directory, policy CRUD (done 2026-09-13)
-- [x] Unit tests: schema creation, item CRUD, concurrent atomic task claiming (14 tests, `go test -race` green) (done 2026-09-13)
-- [x] MCP stdio server (`cmd/fleetcom-mcp`) exposing the `fleetcom_*` tool surface from `dev/IMPLEMENTATION-SPEC.md` section 5 — 13 tools, 7 integration tests (in-memory transport) + one real-binary end-to-end smoke test over actual stdio (done 2026-09-13)
-- [ ] Wrap each item mutation (`CreateItem`/`ClaimItem`/`ProgressItem`/`ReleaseItem`/`CompleteItem`) and its `logActivity` call in one `sql.Tx`, so a crash between the two can't leave the audit trail out of sync with `office_items` (found in 2026-09-13 pre-commit review; not a data-race, since the FK on `activity_log.agent_id`/`office_items.claimed_by` already keeps them consistent for the invalid-agent case, but a mid-write crash is still a real gap)
-- [ ] Seed `policies` table once the source for the "119 fleet policies" is found (see context/open_questions.md)
-- [x] Fix module path (`metro18` -> `pereljon`, matching the real git remote) and lower the `go` directive to the actual dependency floor (1.25.0), found during README review (done 2026-09-13)
-- [ ] README.md fixes (reported to [HERMES:BUILDER], not applied by this session): Tools Reference table is missing `fleetcom_policy_get`; "Requires Go 1.22+" should read "Go 1.25+"; the "Heartbeat" step in the task lifecycle narrative conflates `fleetcom_agent_heartbeat` (agent liveness) with `fleetcom_task_progress` (lease renewal) — only the latter extends `claim_expires_at`; the "Fleet Policies" bullet describes read+enforce distribution but only list/get exist and zero policies are seeded yet
-- [ ] Wire `fleetcom-mcp` into Hermes (`~/.hermes/config.yaml`) and Claude Code (`~/.claude.json`) per IMPLEMENTATION-SPEC.md section 6
+
+- [x] Full restart: remove Go implementation, rebuild as Python office primitives (tasks/reminders/events/contacts) per `INTENT.md` (done 2026-09-13)
+- [x] `src/fleetcom/db.py` schema (4 tables) + `crud.py` generic engine + per-entity CRUD modules, TDD throughout (done 2026-09-13)
+- [x] `src/fleetcom/server.py`: 17 MCP tools via official `mcp` SDK's `MCPServer`, `fleetcom-mcp` console-script entry point (done 2026-09-13)
+- [x] 28 tests (unit + in-memory MCP integration) green; `ruff check`/`ruff format` clean; real end-to-end smoke test against the built `fleetcom-mcp` binary over actual stdio (done 2026-09-13)
+- [x] Updated README.md, dev/CODEMAP.md, dev/SKELETON.md, dev/IMPLEMENTATION-SPEC.md, context/decisions.md, context/open_questions.md, CHANGELOG.md for the restart (done 2026-09-13)
+- [x] Propose commit message for the restart; wait for explicit approval before committing (done 2026-09-13: committed as `4e6d5a2`, pushed to `origin/main`)
+- [x] Design review (4 rounds, `HERMES_RESULT.md`/`RESULT.md`): merge reminders into tasks (not events), add `blocked`/`blocked_reason`, split `completed`/`reviewed` via bespoke `accept`/`reject` rather than enum expansion (done 2026-09-13)
+- [x] Implement the approved two-table schema: drop `reminders` table/module, absorb into `tasks` (`remind_at`, `blocked_reason`, `result_summary`, `reviewed`), add `tasks.accept`/`tasks.reject`, add `agenda.today` aggregator + `agenda_today` tool. 37 tests green, `ruff` clean, real end-to-end smoke test against the built binary (done 2026-09-13)
+- [x] Updated README.md, dev/CODEMAP.md, dev/SKELETON.md, dev/IMPLEMENTATION-SPEC.md, context/decisions.md, CHANGELOG.md for the schema merge (done 2026-09-13)
+- [ ] Wire `fleetcom-mcp` into Hermes (`~/.hermes/config.yaml`) and Claude Code (`~/.claude.json`) per the README's Quick Start
+- [ ] `HERMES_TASK.md`'s own tool count ("17 -> 13") is internally inconsistent with its own tool list (which includes `task_accept`/`task_reject`, making it 15) — implemented as 15 and flagged in the pre-commit review; worth a one-line correction to that file or its successor if this round-trip process continues
+- [ ] Propose commit message for this round's schema-merge changes; wait for explicit approval before committing

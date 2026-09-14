@@ -1,20 +1,36 @@
 # Fleetcom
 
-A shared coordination service for teams of autonomous AI agents.
+Shared office primitives for a fleet of AI agents.
 
-When you run multiple AI coding agents across projects, they step on each other: two agents grab the same task, nobody tracks deadlines, and when an agent crashes mid-turn, its work stays locked forever.
+When you run multiple AI agents across projects, they have no shared office data: a phone number one agent finds is invisible to the others, tasks get relayed through chat, nobody has a place to check what's due, and there's no shared address book for vendors and clients.
 
-Fleetcom solves this by giving your agents a shared coordination board over the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). It runs as a single lightweight Go binary backed by SQLite. No background services, no Docker containers, no external cloud dependencies.
+Fleetcom is that shared office notebook, exposed over the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/): three primitives, a single Python process talking stdio, backed by one SQLite file. No daemons, no queues, no policy engine.
 
 ---
 
 ## What It Does
 
-- **Race-Safe Task Queue:** When multiple agents poll for work, atomic claiming ensures exactly one agent claims a task.
-- **Crash Recovery:** Tasks have leases. If an agent crashes or hangs, its claim expires automatically and returns to the open pool.
-- **Shared Calendar & Milestones:** Track deadlines, scheduled jobs, and reminders across agents with standard RFC-5545 iCalendar semantics.
-- **Agent Directory:** Know which agents are online, what they are working on, and their capabilities.
-- **Fleet Policies:** Query operational rules (git conventions, review standards, safety constraints) that agents can check before acting.
+- **Tasks:** Shared work items with an owner, a status (`open` / `in-progress` / `blocked` / `completed`), and optional `due`/`remind_at` timestamps. There is no separate reminders primitive — a task with only `remind_at` set *is* a reminder (`task_list(due_now=True)` surfaces it); a task with only `due` is a deadline; a task with both gets an advance-warning nudge before the deadline. See "The Reminder Merge" below for why.
+- **Events:** Calendar entries with a start/end and a location. No completion concept — an event just happens or it doesn't.
+- **Contacts:** A shared address book (vendors, clients, team, other), searchable by name or tag.
+- **Agenda:** `agenda_today()` aggregates tasks due right now with events happening today, for a single "what needs my attention" check.
+
+There is no atomic task-claiming, no lease/expiry machinery, and no agent registry. Ownership is a plain, nullable string field any agent can set; if two agents write the same task at once, last write wins. That's a deliberate simplification — this is a shared notebook, not a work-queue.
+
+### The Reminder Merge
+
+Reminders started as their own table and were folded into `tasks` after a design review (see `context/decisions.md`). The short version: a "completion" bit only means something in three ways — the creator did it, a specific person (jP) did it, or an automated system stamped a delivery time. None of those require a fourth, standalone primitive; every genuine reminder resolves to a small task (`remind_at` set, `owner` often null) or a plain event. `owner` being nullable on tasks matters here: an *unowned* task marked `completed` means "acknowledged / seen," not "verified work" — there's no work-product behind a dismissed FYI. An *owned* task marked `completed` means the owner is claiming the work is done, which is a distinct thing from `reviewed` (see below).
+
+**Fleet guidance on where things go:** a fact with no deadline (a phone number, a preference) belongs in memory, not fleetcom — nothing here expires or reminds. A pure broadcast nobody needs to look up later belongs in chat. Fleetcom is for anything with a *time* or a *status* worth querying later.
+
+### Status Lifecycle
+
+`open → in-progress → completed` is the common path. `blocked` is reachable from either `open` or `in-progress`, and requires a `blocked_reason` (enforced by a CHECK constraint — the write is rejected without one). Completion has two independent axes:
+
+- `status = 'completed'` + `result_summary` — set by whoever did the work, claiming it's done.
+- `reviewed = 1` — set only via `task_accept`, by whoever is confirming that claim (e.g. CoS). `task_reject` bounces a completed task back to `in-progress` with a note (appended to `description`) and clears `reviewed`.
+
+`actor` on `task_accept`/`task_reject` is audit-trail data, not an enforced permission — fleetcom has no agent-identity layer, so nothing verifies the caller really is who they claim.
 
 ---
 
@@ -22,23 +38,17 @@ Fleetcom solves this by giving your agents a shared coordination board over the 
 
 ### 1. Install
 
-Requires Go 1.25+.
+Requires Python 3.11+.
 
 ```bash
-go install github.com/pereljon/fleetcom/cmd/fleetcom-mcp@latest
-```
-
-Or build from source:
-
-```bash
-git clone https://github.com/pereljon/fleetcom.git
+git clone git@github.com-pereljon:pereljon/fleetcom.git
 cd fleetcom
-go build -o /usr/local/bin/fleetcom-mcp ./cmd/fleetcom-mcp
+uv sync
 ```
 
 ### 2. Connect Your Agents
 
-Fleetcom communicates over standard input/output (`stdio`), making it compatible with any MCP client.
+Fleetcom communicates over standard input/output (`stdio`).
 
 #### Claude Code (`~/.claude.json`)
 
@@ -46,8 +56,9 @@ Fleetcom communicates over standard input/output (`stdio`), making it compatible
 {
   "mcpServers": {
     "fleetcom": {
-      "command": "fleetcom-mcp",
-      "args": ["--db", "/path/to/fleetcom.db"]
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/fleetcom", "fleetcom-mcp"],
+      "env": { "FLEETCOM_DB_PATH": "/path/to/fleetcom.db" }
     }
   }
 }
@@ -58,26 +69,13 @@ Fleetcom communicates over standard input/output (`stdio`), making it compatible
 ```yaml
 mcp_servers:
   fleetcom:
-    command: fleetcom-mcp
-    args: ["--db", "/path/to/fleetcom.db"]
+    command: uv
+    args: ["run", "--directory", "/path/to/fleetcom", "fleetcom-mcp"]
+    env:
+      FLEETCOM_DB_PATH: /path/to/fleetcom.db
 ```
 
----
-
-## How It Works
-
-### The Task Lifecycle
-
-```
-[Open Pool] ──(atomic claim)──> [In-Process] ──(complete)──> [Done]
-     ^                                │
-     └──(lease expires / released)────┘
-```
-
-1. **Create:** An orchestrator or human adds a task with an optional due date and priority.
-2. **Claim:** An agent calls `fleetcom_task_claim`. SQLite executes an atomic compare-and-swap. If two agents attempt to claim simultaneously, only one succeeds.
-3. **Progress & Lease Renewal:** While working, the agent periodically calls `fleetcom_task_progress` to extend its task lease deadline.
-4. **Complete or Recover:** The agent marks the task complete with a summary. If the agent crashes without completing, the lease expires and the task returns to the pool for another worker.
+`FLEETCOM_DB_PATH` defaults to `~/Claude/-hermes/fleetcom.db` if unset.
 
 ---
 
@@ -85,27 +83,30 @@ mcp_servers:
 
 | Tool | Purpose |
 |------|---------|
-| `fleetcom_task_list` | List open, claimed, or completed tasks |
-| `fleetcom_task_create` | Add a new task to the shared queue |
-| `fleetcom_task_claim` | Atomically claim an open task with a lease |
-| `fleetcom_task_progress` | Update status and extend lease deadline |
-| `fleetcom_task_complete` | Mark task done with an outcome summary |
-| `fleetcom_task_release` | Return a claimed task back to the open pool |
-| `fleetcom_event_list` | Query calendar milestones within a date range |
-| `fleetcom_event_create` | Schedule a shared event or milestone |
-| `fleetcom_agent_register` | Register an agent and its capabilities |
-| `fleetcom_agent_heartbeat` | Update agent presence and liveness |
-| `fleetcom_directory_list` | List registered agents and active workers |
-| `fleetcom_policy_list` | Read active operational rules and constraints |
-| `fleetcom_policy_get` | Retrieve a specific policy rule by ID |
+| `task_create` | Add a task (summary, owner, due, remind_at, status) |
+| `task_list` | List tasks, filtered by status/owner, or `due_now=True` for what's due |
+| `task_update` | Change a task's fields; `status='blocked'` requires `blocked_reason` |
+| `task_delete` | Remove a task |
+| `task_accept` | CoS accepts a completed task's result (sets `reviewed=1`) |
+| `task_reject` | CoS bounces a completed task back to `in-progress` with a note |
+| `event_create` | Add a calendar event |
+| `event_list` | List events whose start falls in a date range |
+| `event_update` | Change an event's summary/time/location |
+| `event_delete` | Remove an event |
+| `contact_create` | Add a contact to the shared address book |
+| `contact_search` | Search contacts by name or tag |
+| `contact_update` | Change a contact's fields |
+| `contact_delete` | Remove a contact |
+| `agenda_today` | Tasks due now + events happening today, in one call |
 
 ---
 
-## Architecture Principles
+## Architecture
 
-- **Zero Daemons:** Runs on demand via stdio when an agent starts. Shuts down when the session ends.
-- **Pure Go:** Uses `modernc.org/sqlite` (CGO-free). Compiles into a single portable binary.
-- **Local SQLite:** All data lives in a local database with write-ahead logging (WAL) enabled for high concurrent read/write throughput.
+- **Python + stdlib `sqlite3`**, official `mcp` SDK (`MCPServer`), stdio transport.
+- **Two content tables**, `tasks` and `events`, plus `contacts` — no unified schema, no shared claim/lease columns.
+- **WAL mode** for safe concurrent access from multiple agent processes.
+- **Zero daemons:** the process starts when an agent connects and exits when it disconnects.
 
 ---
 
