@@ -41,7 +41,7 @@ Reminders started as their own table and were folded into `tasks` after a design
 Requires Python 3.11+ (the `mcp` package itself needs >=3.10; this project's floor is a separate, deliberate choice). Install as a standalone tool, not from the development checkout — this pins the launcher's shebang to its own interpreter, so MCP client configs never depend on whatever `python3` happens to resolve to in their environment:
 
 ```bash
-git clone git@github.com-pereljon:pereljon/fleetcom.git
+git clone https://github.com/pereljon/fleetcom.git
 cd fleetcom
 uv tool install --from . fleetcom
 ```
@@ -103,7 +103,7 @@ The database path can be set either way: `--db <path>` (shown above) or the `FLE
 ## Architecture
 
 - **Python + stdlib `sqlite3`**, official `mcp` SDK (`MCPServer`), stdio transport.
-- **Two content tables**, `tasks` and `events`, plus `contacts` — no unified schema, no shared claim/lease columns.
+- **Three tables** (`tasks`, `events`, `contacts`), no unified schema, no shared claim/lease columns.
 - **WAL mode** for safe concurrent access from multiple agent processes.
 - **Zero daemons:** the process starts when an agent connects and exits when it disconnects.
 
