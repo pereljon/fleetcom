@@ -14,6 +14,15 @@ Fleetcom is the fleet's shared office notebook: tasks, events, and contacts in o
 
 If you're unsure whether something is a task or an event, ask: is there a deadline or a check-back point? If yes, task. If it's just "this happens at time T" with nothing to track afterward, event.
 
+### fleetcom tasks vs. Hermes Kanban
+
+Hermes also ships a kanban board (`hermes kanban`) — a durable SQLite task board with atomic claiming, dependency graphs, and a dispatcher that **spawns actual profile processes to execute tasks**. The two overlap on the surface (both track work with statuses and review gates) but answer different questions:
+
+- **Kanban = execution.** A kanban task is dispatched to a Hermes profile worker: the daemon spawns the process, monitors it with heartbeats, retries failures, and enforces circuit breakers. Use it when you want a profile to *run* a multi-step build autonomously. Kanban is Hermes-only; Claude Code sessions have no kanban surface.
+- **Fleetcom = coordination record.** A fleetcom task is a row stating who owns what and where it stands. No process is spawned; the owning agent polls and acts on its own runtime. It is readable and writable from **both** runtime families — Hermes profiles via the `fleetcom` MCP server and Claude Code sessions via `~/.claude.json` — which kanban cannot do.
+
+Rule of thumb: if the work should be *executed by a spawned Hermes profile worker*, use kanban. If the state of work must be *recorded and visible across runtimes* (a CC session picking up work CoS assigned, an agent flagging something blocked), use fleetcom. Contacts, events, and agenda have no kanban equivalent and are always fleetcom.
+
 ## Task conventions
 
 - Agents create and list their own tasks. Check `task_list(owner="<your handle>")` at the start of a session to pick up anything assigned to you.

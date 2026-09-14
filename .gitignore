@@ -39,3 +39,7 @@ build/
 *.so
 *.dylib
 .claudemux-*
+# deploy/
+# Promoted copies only - updated via scripts/promote.sh after review+commit.
+# Consumers symlink here. Never edit deployed copies directly.
+deploy/
