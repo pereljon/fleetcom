@@ -26,6 +26,13 @@ mkdir -p "$DEPLOY_DIR/skills"
 rm -rf "$SKILL_DST"
 cp -R "$SKILL_SRC" "$SKILL_DST"
 
+# Re-assert the consumer symlink every run. Claude Code's auto-updater has
+# been reported to silently delete symlinked directories under
+# ~/.claude/skills/ (real directories survive) -- cheap insurance against
+# that, since deploy/skills/fleetcom itself is unaffected either way.
+mkdir -p "$HOME/.claude/skills"
+ln -sf "$SKILL_DST" "$HOME/.claude/skills/fleetcom"
+
 # Stamp what was promoted
 GIT_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
 printf '%s\n' "$GIT_SHA" > "$DEPLOY_DIR/skills/fleetcom/.promoted-sha"
@@ -41,6 +48,7 @@ printf '%s\n' "$GIT_SHA" > "$DEPLOY_DIR/mcp.promoted-sha" 2>/dev/null || {
 }
 
 echo "promoted skill -> $SKILL_DST"
+echo "symlinked -> $HOME/.claude/skills/fleetcom"
 if [ "${1:-}" != "--skill-only" ]; then
   echo "reinstalled fleetcom-mcp -> $(which fleetcom-mcp 2>/dev/null || echo ~/.local/bin/fleetcom-mcp)"
 fi
