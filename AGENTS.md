@@ -1,11 +1,3 @@
----
-title: Development Project
-description: Self-bootstrapping scaffold for a software project. Behavioral directives, folder structure, and live-state context files are created on first run.
-template_version: 1
----
-
-<!-- ===================== BOOTSTRAP COMPLETE ===================== -->
-
 # AGENTS.md
 
 Guidance for Claude Code when working in this repository.
