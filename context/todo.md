@@ -17,7 +17,7 @@ Entry format: `- [ ] task`  /  done: `- [x] task (done YYYY-MM-DD)`
 - [x] Propose commit message for the schema-merge changes; wait for explicit approval before committing (done 2026-09-13: committed as `51aa048`, pushed to `origin/main`)
 - [x] Author `skills/fleetcom/SKILL.md` + `skills/fleetcom/references/tools.md` (done 2026-09-13)
 - [x] Add `--db` CLI flag (`_resolve_db_path`, TDD) — `HERMES_TASK.md` assumed one already existed for the README to document; it didn't, so added it rather than document a nonexistent flag (done 2026-09-13)
-- [x] Deploy via `uv tool install --from . fleetcom`; verified installed binary (`/Users/jonathan/.local/bin/fleetcom-mcp`) answers `tools/list` and a real tool call over actual stdio, launched directly (not via `uv run`) (done 2026-09-13)
+- [x] Deploy via `uv tool install --from . fleetcom`; verified installed binary (`~/.local/bin/fleetcom-mcp`) answers `tools/list` and a real tool call over actual stdio, launched directly (not via `uv run`) (done 2026-09-13)
 - [x] Updated README.md (install/config sections point at the installed launcher, not the dev checkout), context/decisions.md, dev/CODEMAP.md, CHANGELOG.md for the deployment change (done 2026-09-13)
 - [ ] Wire `fleetcom-mcp` into Hermes (`~/.hermes/config.yaml`) and Claude Code (`~/.claude.json`) — README's Quick Start now has the exact config, but the actual config files on this machine haven't been edited
 - [ ] Symlink `skills/fleetcom/` into the fleet's shared skills directory — **not done**, no path for that directory was given anywhere in this session; see `context/decisions.md`. Need the actual path before this can happen.

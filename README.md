@@ -19,7 +19,7 @@ There is no atomic task-claiming, no lease/expiry machinery, and no agent regist
 
 ### The Reminder Merge
 
-Reminders started as their own table and were folded into `tasks` after a design review (see `docs/ISSUES.md` (Decisions)). The short version: a "completion" bit only means something in three ways — the creator did it, a specific person (jP) did it, or an automated system stamped a delivery time. None of those require a fourth, standalone primitive; every genuine reminder resolves to a small task (`remind_at` set, `owner` often null) or a plain event. `owner` being nullable on tasks matters here: an *unowned* task marked `completed` means "acknowledged / seen," not "verified work" — there's no work-product behind a dismissed FYI. An *owned* task marked `completed` means the owner is claiming the work is done, which is a distinct thing from `reviewed` (see below).
+Reminders started as their own table and were folded into `tasks` after a design review (see `docs/ISSUES.md` (Decisions)). The short version: a "completion" bit only means something in three ways — the creator did it, a specific person (the user) did it, or an automated system stamped a delivery time. None of those require a fourth, standalone primitive; every genuine reminder resolves to a small task (`remind_at` set, `owner` often null) or a plain event. `owner` being nullable on tasks matters here: an *unowned* task marked `completed` means "acknowledged / seen," not "verified work" — there's no work-product behind a dismissed FYI. An *owned* task marked `completed` means the owner is claiming the work is done, which is a distinct thing from `reviewed` (see below).
 
 **Fleet guidance on where things go:** a fact with no deadline (a phone number, a preference) belongs in memory, not fleetcom — nothing here expires or reminds. A pure broadcast nobody needs to look up later belongs in chat. Fleetcom is for anything with a *time* or a *status* worth querying later.
 
@@ -50,7 +50,7 @@ This installs a `fleetcom-mcp` executable (typically `~/.local/bin/fleetcom-mcp`
 
 ### 2. Connect Your Agents
 
-Fleetcom communicates over standard input/output (`stdio`). Point MCP clients at the **installed** launcher, not the dev checkout.
+Fleetcom communicates over standard input/output (`stdio`). Point MCP clients at the **installed** launcher, not the dev checkout. MCP configs do not expand `~`, so replace it with your absolute home path in the examples below.
 
 #### Claude Code (`~/.claude.json`)
 
@@ -58,8 +58,8 @@ Fleetcom communicates over standard input/output (`stdio`). Point MCP clients at
 {
   "mcpServers": {
     "fleetcom": {
-      "command": "/Users/jonathan/.local/bin/fleetcom-mcp",
-      "args": ["--db", "/Users/jonathan/Claude/-hermes/db/fleetcom.db"]
+      "command": "~/.local/bin/fleetcom-mcp",
+      "args": ["--db", "~/Claude/-hermes/db/fleetcom.db"]
     }
   }
 }
@@ -70,8 +70,8 @@ Fleetcom communicates over standard input/output (`stdio`). Point MCP clients at
 ```yaml
 mcp_servers:
   fleetcom:
-    command: /Users/jonathan/.local/bin/fleetcom-mcp
-    args: ["--db", "/Users/jonathan/Claude/-hermes/db/fleetcom.db"]
+    command: ~/.local/bin/fleetcom-mcp
+    args: ["--db", "~/Claude/-hermes/db/fleetcom.db"]
 ```
 
 The database path can be set either way: `--db <path>` (shown above) or the `FLEETCOM_DB_PATH` env var — the flag wins if both are given. Defaults to `~/Claude/-hermes/db/fleetcom.db` if neither is set.

@@ -33,7 +33,7 @@ See `docs/ISSUES.md` (Decisions) for the dated log, including the 2026-09-13 res
 - **No RFC-2119 fleet policy engine.** Fleet-wide conventions stay in `CLAUDE.md`; Fleetcom doesn't distribute or enforce them.
 - **No agent directory / heartbeat table.** Nothing here tracks who's online or what capabilities an agent has.
 - **Separate tables per distinct concept, not one unified `office_items` table.** Simpler DDL per entity, no shared CHECK-constraint matrix.
-- **Reminders are not their own table.** Merged into `tasks` (2026-09-13, four-round design review in `docs/ISSUES.md` (Decisions)) after concluding a "completion" bit only ever means creator-ownership, jP-ownership, or system delivery metadata — none of which need a fourth primitive. `task_list(due_now=True)` ports the old `reminder_list_due` query exactly. Still pull-only: no push notifications, no background polling loop.
+- **Reminders are not their own table.** Merged into `tasks` (2026-09-13, four-round design review in `docs/ISSUES.md` (Decisions)) after concluding a "completion" bit only ever means creator-ownership, the user-ownership, or system delivery metadata — none of which need a fourth primitive. `task_list(due_now=True)` ports the old `reminder_list_due` query exactly. Still pull-only: no push notifications, no background polling loop.
 - **Completion and review are separate axes.** `status='completed'` (anyone can set, via generic `task_update`) and `reviewed=1` (only via the bespoke `tasks.accept`, gated on current status) model "the owner claims it's done" and "someone else confirmed it" as independent facts, not sequential enum values — see `dev/SKELETON.md` for why this couldn't be done as a plain CHECK-constraint enum extension.
 
 ## Deprecation Policy

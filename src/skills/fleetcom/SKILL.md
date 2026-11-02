@@ -27,7 +27,7 @@ Rule of thumb: if the work should be *executed by a spawned Hermes profile worke
 
 - Agents create and list their own tasks. Check `task_list(owner="<your handle>")` at the start of a session to pick up anything assigned to you.
 - Handles are plain strings, not a registered identity: `hermes:builder`, `hermes:cos`, `cc:fleetcom`, `user`. Fleetcom does not verify who's calling — handles are self-reported.
-- `owner="user"` means jP. His personal tasks live in Apple Reminders via the Secretary, not fleetcom. Agents may read `user`-owned tasks for context but must never mark them `completed` — that's jP's or the Secretary's call, not an agent's.
+- `owner="user"` means the user. The user's personal tasks live in Apple Reminders via the Secretary, not fleetcom. Agents may read `user`-owned tasks for context but must never mark them `completed` — that's the user's or the Secretary's call, not an agent's.
 - Only CoS assigns tasks to other agents. Agents do not assign work to each other directly.
 - Status lifecycle: `open` -> `in-progress` -> `blocked` (requires `blocked_reason`, enforced) -> `completed`. `blocked` is reachable from either `open` or `in-progress`.
 - Mark `completed` only after verified execution, with `result_summary` filled in describing what was actually done. Evidence, not intent — don't mark something completed because you're about to do it.
