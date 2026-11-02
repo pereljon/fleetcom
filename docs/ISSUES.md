@@ -1,6 +1,6 @@
 # Issues
 
-Project state: bugs, planned work, next steps, open questions, and decisions. Resolved entries are marked, not deleted. Migrated from `context/` on 2026-10-10; entries are unchanged.
+Project state: bugs, planned work, next steps, open questions, and decisions. Resolved entries are marked, not deleted. Migrated from `context/` on 2026-10-10.
 
 ## Bugs
 
@@ -22,8 +22,15 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 - [x] Deploy via `uv tool install --from . fleetcom`; verified installed binary (`~/.local/bin/fleetcom-mcp`) answers `tools/list` and a real tool call over actual stdio, launched directly (not via `uv run`) (done 2026-09-13)
 - [x] Updated README.md (install/config sections point at the installed launcher, not the dev checkout), context/decisions.md, dev/CODEMAP.md, CHANGELOG.md for the deployment change (done 2026-09-13)
 - [x] Wire `fleetcom-mcp` into Hermes (`~/.hermes/config.yaml`) and Claude Code (`~/.claude.json`) (verified 2026-11-01: both configs call the launcher with `--db` on the live database)
-- [ ] Link the fleetcom skill for Hermes. Claude Code has `~/.claude/skills/fleetcom`. Hermes reads `~/Claude/-hermes/skills` (`skills.external_dirs`), and that folder has no fleetcom entry (checked 2026-11-01).
+- [x] Link the fleetcom skill for Hermes (verified 2026-11-01: `~/Claude/-hermes/skills/autonomous-ai-agents/fleetcom` links to `deploy/skills/fleetcom`)
 - [x] Propose commit message for the skill + deployment changes; wait for explicit approval before committing (done: skill and deploy flow committed in `22d93bf`)
+
+- [ ] `scripts/promote.sh`: `--skill-only` stamps `mcp.promoted-sha` for an install that did not happen. `fleetcom-mcp` needs `--version` so a running build can report itself.
+- [ ] `scripts/promote.sh`: widen the guard beyond `src/`, require a clean `main`, and run the tests. `rm -rf` then `cp` can leave consumers with a broken skill.
+- [ ] Document the deploy flow in README, CODEMAP, and `AGENTS.md`, including "never hand-edit `deploy/`".
+- [ ] Any wrong `--db` or `FLEETCOM_DB_PATH` silently creates an empty database. `~` is not expanded. Consider an explicit flag to create a new database.
+- [ ] Decide how Codex gets the skill. Codex skill delivery has not been checked.
+- [ ] Check `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` (owned by Hermes) for the database path and WAL handling. `fleetcom.db` alone is out of date, because recent data sits in `fleetcom.db-wal`.
 
 ## Next steps
 
@@ -37,6 +44,11 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 ## Decisions
 
 Never rewrite a past decision; add a dated entry that supersedes it.
+
+### 2026-11-01 - Writes run inside `with conn:`; a status change away from `completed` clears `reviewed`; `due_now` includes overdue `due`
+Why: an architect review found that a rejected write left its transaction open and blocked other server processes (verified on a file database), that a reopened task kept `reviewed=1`, and that a task with only a passed `due` never surfaced.
+`crud.update` stays a blind field-setter. `tasks.update` adds `reviewed=0` to the same `UPDATE`, so `crud` gains no state machine. `due_now` no longer ports the old `reminders.list_due` predicate.
+Rejected: rollback in `_anticipated`, which misses callers outside the tool layer; documenting the `reviewed` and `due` behavior as limits instead of fixing it.
 
 ### 2026-11-01 - SUPERSEDES the default in the 2026-09-13 deployment entry: default database path is `~/Claude/-hermes/db/fleetcom.db`
 Why: both MCP clients pass `--db` with this path, so the code default pointed at a zero-byte file. A launch without `--db` would have silently used an empty database. `FLEETCOM_DB_PATH` and `--db` are unchanged.

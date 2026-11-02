@@ -31,7 +31,7 @@ cp -R "$SKILL_SRC" "$SKILL_DST"
 # ~/.claude/skills/ (real directories survive) -- cheap insurance against
 # that, since deploy/skills/fleetcom itself is unaffected either way.
 mkdir -p "$HOME/.claude/skills"
-ln -sf "$SKILL_DST" "$HOME/.claude/skills/fleetcom"
+ln -sfn "$SKILL_DST" "$HOME/.claude/skills/fleetcom"
 
 # Stamp what was promoted
 GIT_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
@@ -39,7 +39,7 @@ printf '%s\n' "$GIT_SHA" > "$DEPLOY_DIR/skills/fleetcom/.promoted-sha"
 
 # Reinstall MCP server (unless skill-only)
 if [ "${1:-}" != "--skill-only" ]; then
-  uv tool install --from "$REPO_ROOT" fleetcom --force >/dev/null
+  uv tool install --python 3.11 --from "$REPO_ROOT" fleetcom --force >/dev/null
 fi
 
 printf '%s\n' "$GIT_SHA" > "$DEPLOY_DIR/mcp.promoted-sha" 2>/dev/null || {

@@ -65,21 +65,27 @@ def list(
             conn, TABLE, FILTERS, limit=limit, status=status, owner=owner
         )
 
-    query = "SELECT * FROM tasks WHERE status != 'completed' AND remind_at IS NOT NULL AND remind_at <= ?"
-    args: list = [util.now_iso()]
+    now = util.now_iso()
+    query = "SELECT * FROM tasks WHERE status != 'completed' AND (remind_at <= ? OR due <= ?)"
+    args: list = [now, now]
     if status is not None:
         query += " AND status = ?"
         args.append(status)
     if owner is not None:
         query += " AND owner = ?"
         args.append(owner)
-    query += " ORDER BY remind_at LIMIT ?"
+    query += " ORDER BY COALESCE(remind_at, due) LIMIT ?"
     args.append(limit)
     return [dict(row) for row in conn.execute(query, args).fetchall()]
 
 
 def update(conn, id_: str, **fields) -> bool:
-    return crud.update(conn, TABLE, FIELDS, id_, **fields)
+    status = fields.get("status")
+    if status is None or status == "completed":
+        return crud.update(conn, TABLE, FIELDS, id_, **fields)
+    # Reopened work has not been reviewed. Same UPDATE, so the two can't diverge.
+    fields["reviewed"] = 0
+    return crud.update(conn, TABLE, FIELDS | {"reviewed"}, id_, **fields)
 
 
 def delete(conn, id_: str) -> bool:
@@ -100,12 +106,12 @@ def accept(conn, task_id: str, actor: str) -> bool:
     existing = row.get("description") or ""
     annotated = f"{existing}\n\n[Accepted by {actor}]".strip()
     now = util.now_iso()
-    cur = conn.execute(
-        "UPDATE tasks SET reviewed = 1, description = ?, updated_at = ? "
-        "WHERE id = ? AND status = 'completed'",
-        (annotated, now, task_id),
-    )
-    conn.commit()
+    with conn:
+        cur = conn.execute(
+            "UPDATE tasks SET reviewed = 1, description = ?, updated_at = ? "
+            "WHERE id = ? AND status = 'completed'",
+            (annotated, now, task_id),
+        )
     return cur.rowcount > 0
 
 
@@ -122,10 +128,10 @@ def reject(conn, task_id: str, actor: str, note: str) -> bool:
     existing = row.get("description") or ""
     annotated = f"{existing}\n\n[Rejected by {actor}]: {note}".strip()
     now = util.now_iso()
-    cur = conn.execute(
-        "UPDATE tasks SET status = 'in-progress', reviewed = 0, description = ?, updated_at = ? "
-        "WHERE id = ? AND status = 'completed'",
-        (annotated, now, task_id),
-    )
-    conn.commit()
+    with conn:
+        cur = conn.execute(
+            "UPDATE tasks SET status = 'in-progress', reviewed = 0, description = ?, updated_at = ? "
+            "WHERE id = ? AND status = 'completed'",
+            (annotated, now, task_id),
+        )
     return cur.rowcount > 0

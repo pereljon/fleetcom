@@ -2,7 +2,7 @@ import sqlite3
 
 import pytest
 
-from fleetcom import tasks
+from fleetcom import db, tasks
 
 
 def test_create_and_get(conn):
@@ -135,3 +135,66 @@ def test_reject_bounces_completed_back_to_in_progress(conn):
     assert "needs more detail" in got["description"]
     assert "cos-agent" in got["description"]
     assert "needs more detail" in got["description"]
+
+
+@pytest.mark.parametrize(
+    "rejected_write",
+    [
+        lambda c, task_id: tasks.update(c, task_id, status="blocked"),
+        lambda c, task_id: tasks.create(c, created_by="a", summary="x", status="bad"),
+    ],
+)
+def test_rejected_write_releases_the_write_lock(tmp_path, rejected_write):
+    path = str(tmp_path / "shared.db")
+    first = db.connect(path)
+    db.migrate(first)
+    second = db.connect(path)
+    second.execute("PRAGMA busy_timeout = 100")
+    task_id = tasks.create(first, created_by="a", summary="x")
+
+    with pytest.raises(sqlite3.IntegrityError):
+        rejected_write(first, task_id)
+
+    assert first.in_transaction is False
+    assert tasks.create(second, created_by="b", summary="y")
+    first.close()
+    second.close()
+
+
+def test_status_change_clears_reviewed(conn):
+    task_id = tasks.create(conn, created_by="a", summary="x")
+    tasks.update(conn, task_id, status="completed")
+    tasks.accept(conn, task_id, actor="hermes:cos")
+
+    tasks.update(conn, task_id, status="in-progress")
+    tasks.update(conn, task_id, status="completed")
+
+    row = tasks.get(conn, task_id)
+    assert row["status"] == "completed"
+    assert row["reviewed"] == 0
+
+
+def test_update_without_status_change_keeps_reviewed(conn):
+    task_id = tasks.create(conn, created_by="a", summary="x")
+    tasks.update(conn, task_id, status="completed")
+    tasks.accept(conn, task_id, actor="hermes:cos")
+
+    tasks.update(conn, task_id, result_summary="done")
+    tasks.update(conn, task_id, status="completed")
+
+    assert tasks.get(conn, task_id)["reviewed"] == 1
+
+
+def test_update_cannot_set_reviewed_directly(conn):
+    task_id = tasks.create(conn, created_by="a", summary="x")
+    with pytest.raises(ValueError):
+        tasks.update(conn, task_id, reviewed=1)
+
+
+def test_list_due_now_includes_overdue_deadlines(conn):
+    overdue = tasks.create(
+        conn, created_by="a", summary="late", due="2020-01-01T00:00:00Z"
+    )
+    tasks.create(conn, created_by="a", summary="later", due="2099-01-01T00:00:00Z")
+
+    assert [t["id"] for t in tasks.list(conn, due_now=True)] == [overdue]

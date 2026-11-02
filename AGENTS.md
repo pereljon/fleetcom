@@ -14,9 +14,9 @@ A shared notebook, not a distributed work queue.
 
 - **Pull-Only:** Nothing watches a clock or pushes a notification. Agents query when they want to know something.
 - **No Claims or Leases:** `owner` and `created_by` are plain strings, and concurrent writes are last-write-wins. The 2026-09-13 restart rejected atomic claiming (`docs/ISSUES.md`, Decisions).
-- **No Daemon:** Each MCP client launches its own stdio server, and all servers share one SQLite file in WAL mode.
-- **Separate Axes for Completion:** `status='completed'` says the work is finished, and `reviewed` says it was checked. Only `task_accept` sets `reviewed`.
-- **Reminders Are Tasks:** A task with `remind_at` set is a reminder. There is no separate reminders primitive.
+- **No Daemon:** Each MCP client launches its own stdio server. Client configs point every server at one SQLite file in WAL mode, so a write must never leave a transaction open.
+- **Separate Axes for Completion:** `status='completed'` is the owner's claim that the work is finished; on an unowned task it means acknowledged. `reviewed` says the claim was checked. Only `task_accept` sets `reviewed`, and any status change away from `completed` clears it.
+- **Reminders Are Tasks:** `remind_at` alone is a reminder, `due` alone is a deadline, and both together give a deadline with advance warning. There is no separate reminders primitive.
 
 ## Read First
 
@@ -26,6 +26,6 @@ A shared notebook, not a distributed work queue.
 
 - **Users:** One person's fleet of Hermes profiles and Claude Code sessions, on one trusted machine. Fleetcom has no network port.
 - **Untrusted inputs:** Tool arguments, and text in stored rows. An agent may store text taken from email or the web, and another agent later reads it.
-- **Identity:** Handles such as `actor`, `owner`, and `created_by` are self-reported, so they are audit data and not proof of who wrote a row.
-- **Costliest mistake:** Letting a caller-supplied name reach an SQL identifier without an allow-list, or treating stored text as instructions.
-- **Sensitive data:** Contacts hold personal data. Keep the database out of the repo and out of logs.
+- **Identity:** Handles such as `actor`, `owner`, and `created_by` are self-reported, so they are not proof of who wrote a row. Accept and reject records sit in `description`, which any `task_update` can overwrite.
+- **Costliest mistakes:** Any client can rewrite or hard-delete any row, with no history. Beyond that, the costliest are letting a caller-supplied name reach an SQL identifier without an allow-list, and treating stored text as instructions.
+- **Sensitive data:** Contacts, tasks, and events can hold personal data. Keep the database out of this repo and out of logs.

@@ -4,7 +4,7 @@ Shared office primitives for a fleet of AI agents.
 
 When you run multiple AI agents across projects, they have no shared office data: a phone number one agent finds is invisible to the others, tasks get relayed through chat, nobody has a place to check what's due, and there's no shared address book for vendors and clients.
 
-Fleetcom is that shared office notebook, exposed over the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/): three primitives, a single Python process talking stdio, backed by one SQLite file. No daemons, no queues, no policy engine.
+Fleetcom is that shared office notebook, exposed over the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/): three primitives, one Python stdio server per MCP client, backed by one SQLite file. No daemons, no queues, no policy engine.
 
 ---
 
@@ -21,7 +21,7 @@ There is no atomic task-claiming, no lease/expiry machinery, and no agent regist
 
 Reminders started as their own table and were folded into `tasks` after a design review (see `docs/ISSUES.md` (Decisions)). The short version: a "completion" bit only means something in three ways — the creator did it, a specific person (the user) did it, or an automated system stamped a delivery time. None of those require a fourth, standalone primitive; every genuine reminder resolves to a small task (`remind_at` set, `owner` often null) or a plain event. `owner` being nullable on tasks matters here: an *unowned* task marked `completed` means "acknowledged / seen," not "verified work" — there's no work-product behind a dismissed FYI. An *owned* task marked `completed` means the owner is claiming the work is done, which is a distinct thing from `reviewed` (see below).
 
-**Fleet guidance on where things go:** a fact with no deadline (a phone number, a preference) belongs in memory, not fleetcom — nothing here expires or reminds. A pure broadcast nobody needs to look up later belongs in chat. Fleetcom is for anything with a *time* or a *status* worth querying later.
+**Fleet guidance on where things go:** a fact with no deadline (a preference) belongs in memory, not fleetcom — nothing here expires or reminds. A phone number goes in Contacts. A pure broadcast nobody needs to look up later belongs in chat. Fleetcom is for anything with a *time* or a *status* worth querying later.
 
 ### Status Lifecycle
 
@@ -82,7 +82,7 @@ The database path can be set either way: `--db <path>` (shown above) or the `FLE
 
 | Tool | Purpose |
 |------|---------|
-| `task_create` | Add a task (summary, owner, due, remind_at, status) |
+| `task_create` | Add a task (summary, created_by, description, owner, due, remind_at) |
 | `task_list` | List tasks, filtered by status/owner, or `due_now=True` for what's due |
 | `task_update` | Change a task's fields; `status='blocked'` requires `blocked_reason` |
 | `task_delete` | Remove a task |

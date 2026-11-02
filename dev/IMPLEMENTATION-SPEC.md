@@ -7,7 +7,7 @@ Maintain: update when architecture, settings, or behavior changes.
 
 Fleetcom is a single Python process, run on demand by an MCP client (Claude Code, a Hermes profile), speaking stdio JSON-RPC via the official `mcp` SDK's `MCPServer`. It has no daemon, no network port, and no background task.
 
-Storage is one SQLite file, opened once per process with `PRAGMA journal_mode=WAL`, `busy_timeout=5000`, `foreign_keys=ON`. Three independent tables hold the primitives (`tasks`, `events`, `contacts`); there is no unified "item" table and no cross-entity foreign keys — each row is self-contained aside from plain-string, nullable `owner`/`created_by` fields.
+Storage is one SQLite file, opened once per process with `PRAGMA journal_mode=WAL`, `busy_timeout=5000`, `foreign_keys=ON`. Three independent tables hold the primitives (`tasks`, `events`, `contacts`); there is no unified "item" table and no cross-entity foreign keys — each row is self-contained aside from the plain-string `owner` (nullable) and `created_by` (required) fields.
 
 `src/fleetcom/crud.py` is a small generic engine (`create`/`get`/`list_rows`/`update`/`delete`) parameterized by table name and an allow-listed field set, used by all three entity modules (`tasks.py`, `events.py`, `contacts.py`). Each entity module adds its own bespoke queries where plain equality filtering isn't enough (`tasks.list(due_now=True)`, `events.list_in_range`, `contacts.search`), and `tasks.accept`/`tasks.reject` bypass the generic engine entirely for status-gated transitions the engine has no concept of.
 
@@ -21,7 +21,7 @@ Storage is one SQLite file, opened once per process with `PRAGMA journal_mode=WA
 |---|---|---|
 | Database path | `--db` flag, then `FLEETCOM_DB_PATH` env var | `~/Claude/-hermes/db/fleetcom.db` |
 | Python version | `pyproject.toml` `requires-python` | `>=3.11` |
-| MCP SDK | `mcp` dependency | latest (currently 2.x, `MCPServer` API) |
+| MCP SDK | `mcp` dependency | `>=2.2,<2.3` (`mcp.server.mcpserver` API) |
 
 No other configuration exists. There is no policy engine, no agent registry, and no lease/claim tuning (lease minutes, TTLs) because none of those concepts exist in this design.
 
@@ -30,7 +30,7 @@ No other configuration exists. There is no policy engine, no agent registry, and
 See `docs/ISSUES.md` (Decisions) for the dated log, including the 2026-09-13 restart. Summary of what's different from the original (Go, Mission-Control-style) design this replaced:
 
 - **No atomic task claiming.** Ownership is a plain mutable string column. This is a shared office notebook for a small, trusted fleet, not a race-safe work queue for a large pool of untrusted, concurrently-competing workers.
-- **No RFC-2119 fleet policy engine.** Fleet-wide conventions stay in `CLAUDE.md`; Fleetcom doesn't distribute or enforce them.
+- **No RFC-2119 fleet policy engine.** Fleet-wide conventions stay in the `AGENTS.md` files; Fleetcom doesn't distribute or enforce them.
 - **No agent directory / heartbeat table.** Nothing here tracks who's online or what capabilities an agent has.
 - **Separate tables per distinct concept, not one unified `office_items` table.** Simpler DDL per entity, no shared CHECK-constraint matrix.
 - **Reminders are not their own table.** Merged into `tasks` (2026-09-13, four-round design review in `docs/ISSUES.md` (Decisions)) after concluding a "completion" bit only ever means creator-ownership, the user-ownership, or system delivery metadata — none of which need a fourth primitive. `task_list(due_now=True)` ports the old `reminder_list_due` query exactly. Still pull-only: no push notifications, no background polling loop.

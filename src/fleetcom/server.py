@@ -69,8 +69,8 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
         limit: int = 50,
     ) -> dict[str, Any]:
         """List tasks, optionally filtered by status (open/in-progress/blocked/completed)
-        or owner. due_now=True returns not-yet-completed tasks whose remind_at has
-        passed (a pull-only "what needs attention" check, not a push notification)."""
+        or owner. due_now=True returns not-yet-completed tasks whose remind_at or
+        due has passed (a pull-only "what needs attention" check, not a push notification)."""
         return {
             "tasks": tasks.list(
                 conn, status=status, owner=owner, due_now=due_now, limit=limit

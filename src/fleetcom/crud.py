@@ -1,9 +1,12 @@
-"""Generic CRUD engine shared by the tasks/reminders/events/contacts tables.
+"""Generic CRUD engine shared by the tasks/events/contacts tables.
 
 Table names are always literals supplied by the calling module, never
 caller-controlled. `allowed` sets are fixed per entity and gate every field
 or filter name before it is interpolated into a SQL identifier position,
 closing off column-name injection even though values are parameterized.
+
+Writes run inside `with conn:` so a rejected statement rolls back. An open
+transaction would hold the write lock against every other server process.
 """
 
 from __future__ import annotations
@@ -29,10 +32,11 @@ def create(
     columns = ["id", "created_by", "created_at", "updated_at", *fields.keys()]
     values = [id_, created_by, now, now, *fields.values()]
     placeholders = ", ".join("?" for _ in columns)
-    conn.execute(
-        f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})", values
-    )
-    conn.commit()
+    with conn:
+        conn.execute(
+            f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})",
+            values,
+        )
     return id_
 
 
@@ -75,12 +79,12 @@ def update(
     fields["updated_at"] = util.now_iso()
     set_clause = ", ".join(f"{key} = ?" for key in fields)
     args = [*fields.values(), id_]
-    cur = conn.execute(f"UPDATE {table} SET {set_clause} WHERE id = ?", args)
-    conn.commit()
+    with conn:
+        cur = conn.execute(f"UPDATE {table} SET {set_clause} WHERE id = ?", args)
     return cur.rowcount > 0
 
 
 def delete(conn: sqlite3.Connection, table: str, id_: str) -> bool:
-    cur = conn.execute(f"DELETE FROM {table} WHERE id = ?", (id_,))
-    conn.commit()
+    with conn:
+        cur = conn.execute(f"DELETE FROM {table} WHERE id = ?", (id_,))
     return cur.rowcount > 0

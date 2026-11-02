@@ -6,7 +6,7 @@ authors = [
     { name = "Jonathan Perel", email = "1195913+pereljon@users.noreply.github.com" }
 ]
 requires-python = ">=3.11"
-dependencies = ["mcp>=1.0.0"]
+dependencies = ["mcp>=2.2,<2.3"]
 
 [project.scripts]
 fleetcom-mcp = "fleetcom.server:main"
