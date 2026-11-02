@@ -98,6 +98,8 @@ The database path can be set either way: `--db <path>` (shown above) or the `FLE
 | `contact_delete` | Remove a contact |
 | `agenda_today` | Tasks due now + events happening today, in one call |
 
+List tools return at most `limit` rows (default 50, maximum 1,000,000) with a leading `truncated` flag. `agenda_today` returns `tasks_truncated` and `events_truncated` instead. Tasks sort active, then unreviewed, then reviewed, newest first in each group.
+
 ---
 
 ## Architecture

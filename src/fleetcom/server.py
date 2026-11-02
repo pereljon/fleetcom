@@ -11,7 +11,7 @@ from typing import Any
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
-from . import agenda, contacts, db, events, tasks
+from . import agenda, contacts, db, events, tasks, util
 
 # The SDK runs sync tools in worker threads, and all of them share one connection.
 # Transactions are per connection, so calls must not interleave on it.
@@ -72,16 +72,22 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
         status: str | None = None,
         owner: str | None = None,
         due_now: bool = False,
-        limit: int = 50,
+        limit: int = util.DEFAULT_LIMIT,
     ) -> dict[str, Any]:
         """List tasks, optionally filtered by status (open/in-progress/blocked/completed)
         or owner. due_now=True returns not-yet-completed tasks whose remind_at or
-        due has passed (a pull-only "what needs attention" check, not a push notification)."""
-        return {
-            "tasks": tasks.list(
-                conn, status=status, owner=owner, due_now=due_now, limit=limit
-            )
-        }
+        due has passed (a pull-only "what needs attention" check, not a push notification).
+        truncated=true means rows were cut: try a narrower filter first, then a larger
+        limit (default 50).
+        Without due_now, rows sort active, then unreviewed, then reviewed. If the last
+        row is completed with reviewed=1, only accepted history was cut, so no retry is needed."""
+        rows, truncated = util.capped(
+            lambda n: tasks.list(
+                conn, status=status, owner=owner, due_now=due_now, limit=n
+            ),
+            limit,
+        )
+        return {"truncated": truncated, "tasks": rows}
 
     @mcp.tool()
     @_anticipated
@@ -157,9 +163,16 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
 
     @mcp.tool()
     @_anticipated
-    def event_list(start: str, end: str, limit: int = 50) -> dict[str, Any]:
-        """List events whose start falls within [start, end] (ISO-8601)."""
-        return {"events": events.list_in_range(conn, start=start, end=end, limit=limit)}
+    def event_list(
+        start: str, end: str, limit: int = util.DEFAULT_LIMIT
+    ) -> dict[str, Any]:
+        """List events whose start falls within [start, end] (ISO-8601).
+        truncated=true means rows were cut: try a narrower range first, then a larger
+        limit (default 50)."""
+        rows, truncated = util.capped(
+            lambda n: events.list_in_range(conn, start=start, end=end, limit=n), limit
+        )
+        return {"truncated": truncated, "events": rows}
 
     @mcp.tool()
     @_anticipated
@@ -217,9 +230,14 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
 
     @mcp.tool()
     @_anticipated
-    def contact_search(query: str, limit: int = 50) -> dict[str, Any]:
-        """Search contacts by a substring match on name or tags."""
-        return {"contacts": contacts.search(conn, query=query, limit=limit)}
+    def contact_search(query: str, limit: int = util.DEFAULT_LIMIT) -> dict[str, Any]:
+        """Search contacts by a substring match on name or tags.
+        truncated=true means rows were cut: try a narrower query first, then a larger
+        limit (default 50)."""
+        rows, truncated = util.capped(
+            lambda n: contacts.search(conn, query=query, limit=n), limit
+        )
+        return {"truncated": truncated, "contacts": rows}
 
     @mcp.tool()
     @_anticipated
@@ -256,7 +274,10 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
     @mcp.tool()
     @_anticipated
     def agenda_today() -> dict[str, Any]:
-        """Aggregate: tasks due right now (due_now) plus events happening today (UTC)."""
+        """Aggregate: tasks due right now (due_now) plus events happening today (UTC),
+        up to 50 of each. If tasks_truncated is true, call task_list(due_now=True, limit=N).
+        If events_truncated is true, call event_list from T00:00:00Z to T23:59:59Z
+        on the current UTC date, with limit=N."""
         return agenda.today(conn)
 
     return mcp

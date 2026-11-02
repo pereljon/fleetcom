@@ -10,6 +10,9 @@ Nothing in this project has been released yet; the entries below reflect the cur
 - Add `fleetcom-mcp`: stdio MCP server (official `mcp` SDK) exposing 15 tools — plain create/list/update/delete over tasks/events/contacts, `task_accept`/`task_reject` for the review gate, and `agenda_today` aggregating tasks due now with today's events.
 - Add `--db` CLI flag (`FLEETCOM_DB_PATH` env var still works; the flag takes precedence).
 - Change the default database path to `~/.fleetcom/fleetcom.db`.
+- Fix list tools cutting rows silently: add `truncated` to `task_list`, `event_list`, and `contact_search`, and `tasks_truncated` and `events_truncated` to `agenda_today`.
+- Change the default `task_list` order to active, then unreviewed, then reviewed, newest first in each group.
+- Reject `limit` outside 1 to 1,000,000. `limit=-1` no longer returns every row.
 - Fix servers crashing with `database is locked` when they start together on a new database file.
 - Fix a rejected write leaving its transaction open, which blocked writes from every other server.
 - Fix concurrent tool calls interleaving on the shared connection, which lost writes already reported as successful.

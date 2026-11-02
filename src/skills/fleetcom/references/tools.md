@@ -2,12 +2,15 @@
 
 One usage example per tool. All 15 tools, grepped from `src/fleetcom/server.py`'s actual `@mcp.tool()` registrations — this list is not maintained by hand elsewhere, so if it drifts from the running server, trust `tools/list`, not this file.
 
+List tools return `truncated` first, and `limit` runs from 1 to 1,000,000 (default 50). A true flag means rows were cut.
+
 ## Tasks
 
 - `task_create(summary="renew SSL cert", created_by="hermes:builder", due="2026-10-01T00:00:00Z")` — a plain deadline.
 - `task_create(summary="check domain renewal", created_by="hermes:secretary", remind_at="2026-09-20T09:00:00Z")` — a pure reminder (no `due`).
 - `task_list(owner="hermes:builder", status="open")` — what's on your open list.
 - `task_list(due_now=True)` — everything not yet completed whose `remind_at` or `due` has passed.
+- `task_list(status="completed")` — the review queue, with unreviewed rows first.
 - `task_update(task_id="...", status="in-progress")` — claim/advance a task.
 - `task_update(task_id="...", status="blocked", blocked_reason="waiting on vendor callback")` — blocked requires a reason.
 - `task_update(task_id="...", status="completed", result_summary="cert renewed, expires 2027-10-01")` — mark done with evidence.
@@ -31,4 +34,4 @@ One usage example per tool. All 15 tools, grepped from `src/fleetcom/server.py`'
 
 ## Agenda
 
-- `agenda_today()` — tasks due right now plus events happening today, in one call. Equivalent to calling `task_list(due_now=True)` and `event_list` for today's date range yourself, combined.
+- `agenda_today()` — tasks due right now plus events happening today, in one call. Equivalent to calling `task_list(due_now=True)` and `event_list` for today's date range yourself, combined, up to 50 of each. It returns `tasks_truncated` and `events_truncated` first, and a true flag means you must make those two calls with a larger `limit`.

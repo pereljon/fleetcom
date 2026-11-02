@@ -6,8 +6,8 @@ Maintain: add a row when code lands; keep each purpose to one line.
 | function/module | one-line purpose |
 |-----------------|------------------|
 | `src/fleetcom/db.py` | schema DDL for tasks/events/contacts; `connect`, `_enable_wal` (bounded retry of the WAL switch), `migrate`, `default_db_path` |
-| `src/fleetcom/util.py` | `new_id` (uuid4), `now_iso` (UTC RFC3339-ish timestamp) |
-| `src/fleetcom/crud.py` | generic, injection-safe CRUD engine (`create`/`get`/`list_rows`/`update`/`delete`) shared by all entities; field/filter names are validated against a fixed allow-list before being interpolated into SQL identifier positions |
+| `src/fleetcom/util.py` | `new_id` (uuid4), `now_iso` (UTC RFC3339-ish timestamp), `capped` (fetches `limit + 1` rows to report truncation and validates `limit`) |
+| `src/fleetcom/crud.py` | generic, injection-safe CRUD engine (`create`/`get`/`update`/`delete`) shared by all entities; field names are validated against a fixed allow-list before being interpolated into SQL identifier positions |
 | `src/fleetcom/tasks.py` | task CRUD (absorbs former reminders via `remind_at`); `list(due_now=True)` bespoke query; `accept`/`reject` bespoke status-gated transitions |
 | `src/fleetcom/events.py` | event CRUD + `list_in_range` (start between two ISO timestamps) |
 | `src/fleetcom/contacts.py` | contact CRUD + `search` (substring match on name/tags, with LIKE-wildcard escaping) |

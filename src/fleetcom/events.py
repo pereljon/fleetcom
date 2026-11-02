@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from . import crud
+from . import crud, util
 
 TABLE = "events"
 FIELDS = {"summary", "description", "start", "end", "location"}
@@ -28,7 +28,9 @@ def get(conn, id_: str) -> dict | None:
     return crud.get(conn, TABLE, id_)
 
 
-def list_in_range(conn, *, start: str, end: str, limit: int = 50) -> list[dict]:
+def list_in_range(
+    conn, *, start: str, end: str, limit: int = util.DEFAULT_LIMIT
+) -> list[dict]:
     rows = conn.execute(
         "SELECT * FROM events WHERE start >= ? AND start <= ? ORDER BY start LIMIT ?",
         (start, end, limit),
