@@ -44,7 +44,13 @@ Two read-only reviews on 2026-11-01 ran these on scratch databases. Neither touc
 - `limit < 1` becomes an error, so `limit=-1` stops returning every row.
 - The schema does not change, so old and new servers can share the database. Each client keeps old code until its server restarts.
 
-hermes-manager has been asked whether Hermes depends on any of these. The answer is not in yet.
+hermes-manager scanned Hermes skills, cron definitions, config, and scripts on 2026-11-01, and found no dependency:
+
+- No scanned file passes `limit=-1` or `limit=0` to a Fleetcom tool (verified).
+- No script consumes `task_list` results, and the consumers are LLM agents, so row order and extra keys should not matter (inferred).
+- CoS finds its review queue with `task_list(status="completed")`, then filters on `reviewed == 0` itself (verified from the latest `fleet-sync-daily` output, because the `fleet-sync` skill source was not found). The `reviewed` sort term puts unreviewed rows first in that query, so the queue stays visible.
+
+A scan cannot rule out an ad hoc call by an LLM agent.
 
 ## Decisions
 

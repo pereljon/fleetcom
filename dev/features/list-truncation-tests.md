@@ -14,6 +14,7 @@ Tests use temp databases and no sleeps. Tests set `created_at` directly to contr
 | Larger limit | 51 rows with `limit=51` | All 51 rows, and `truncated` is false |
 | Old live work | One old open task and 60 newer completed tasks | The open task is returned |
 | Review queue | One old unreviewed completed task and 60 newer accepted tasks | The unreviewed task is returned |
+| CoS query | The same data through `task_list(status="completed")` | The unreviewed task is first |
 | Order | One task in each state | Active, then unreviewed, then reviewed |
 | Still flagged | 61 live tasks | 50 rows, and `truncated` is true |
 | Owner filter | 50 completed tasks and one new open task for an owner | The open task is returned |
