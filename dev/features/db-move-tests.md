@@ -80,3 +80,18 @@ A subagent reviewed both docs on 2026-11-01 (Opus, high effort). The main sessio
 | M1 | No pre-move copy | `mv` has no undo | The user approved a one-time copy; steps 11 and 17 |
 | M2 | "Existing file" test could not observe a missing retry | Runs in one process | Test dropped; concurrent WAL opens measured 0 of 360 failures |
 | M3 | `docs/ISSUES.md` said the crash matters for the move | WAL mode persists in the file header | Issue entry corrected |
+
+Code review of `db-move` by a subagent on 2026-11-01 (Opus, high effort). The retry had no defects: 5,800 concurrent opens at up to 100 processes gave 0 failures. The findings rest on the reviewer's evidence, and the main session reran the suite after its fixes.
+
+| ID | Finding | Evidence | Resolution |
+|----|---------|----------|------------|
+| F1 | The race test could stall on a hung child | Assertion at 6.2 s, pytest exit at 25.3 s with a sleeping child | Daemon children, a shared 30 second deadline, and a kill in `finally` |
+| F2 | `db.migrate` can fail at startup behind a long-held write lock | `SQLITE_BUSY` after 12.79 s with `BEGIN IMMEDIATE` held | Existing behavior; recorded in `docs/ISSUES.md` |
+| F3 | Design item 4 asked for absolute paths in the README | The examples keep `~` | Design amended; the README note covers it |
+| F4 | Design status said "not built" | `db-move.md:5` | Updated |
+| F5 | No decision superseded the old default | `docs/ISSUES.md` Decisions | Dated entry added |
+| F6 | The plan claimed a check no test made | Deleting the `busy_timeout` line passed | The test records statements and asserts on it |
+| F7 | No test pinned the retry delay | Delays of 1 s and 5 s passed | Give-up test asserts more than 100 attempts |
+| F8 | State docs out of step | `docs/ISSUES.md` and `dev/CODEMAP.md` | Both updated |
+| F9 | A new default database gets wider modes than the runbook sets | 755 and 644 under umask 022 | Recorded in `docs/ISSUES.md` for the user |
+| F10 | "Up to 10 seconds" misstated the longest `connect` | 12.53 s with an exclusive lock held for 60 s | Docs reworded |

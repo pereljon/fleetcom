@@ -2,7 +2,7 @@
 
 Owns: the design and cutover runbook for moving the live database to `~/.fleetcom/`. Does NOT hold test cases or review findings (`db-move-tests.md`).
 
-Status: designed and reviewed 2026-11-01, not built. Investigated against commit `08abf75`, Python's SQLite 3.53.1, and Homebrew's `sqlite3` CLI 3.54.1.
+Status: built on branch `db-move` and reviewed 2026-11-01. The cutover has not run. Investigated against commit `08abf75`, Python's SQLite 3.53.1, and Homebrew's `sqlite3` CLI 3.54.1.
 
 ## Goal
 
@@ -38,9 +38,9 @@ These results come from tests on generated files, on 2026-11-01. None touched th
 ## Code changes
 
 1. Change `db.default_db_path` to return `~/.fleetcom/fleetcom.db`.
-2. Add a bounded retry around `PRAGMA journal_mode = WAL` in `db.connect`. Retry only on an `OperationalError` that contains `locked`, every 20 ms for up to 10 seconds, then re-raise.
+2. Add a bounded retry around `PRAGMA journal_mode = WAL` in `db.connect`. Retry only on an `OperationalError` that contains `locked`, every 20 ms, and start no new attempt after 10 seconds. One attempt can still spend the busy timeout, so the worst case is about 23 seconds (inferred).
 3. Update `README.md`, `src/skills/fleetcom/SKILL.md`, `dev/IMPLEMENTATION-SPEC.md`, `CHANGELOG.md`, and `tests/test_db.py` for the new default.
-4. Use an absolute path in the `README.md` config examples. Fleetcom does not expand `~`, so `--db ~/...` creates a folder literally named `~` unless the client expands it first.
+4. Keep the `README.md` note that MCP configs need an absolute path. Fleetcom does not expand `~`, so a literal `--db ~/...` creates a folder named `~`. The examples keep `~`, because a real path would put a home folder in a public repo.
 
 The `--db` flag, `FLEETCOM_DB_PATH`, and their precedence do not change.
 

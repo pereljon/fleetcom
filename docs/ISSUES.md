@@ -35,7 +35,8 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 - [ ] Editing a reviewed task's `description` or `result_summary` keeps `reviewed=1` on content nobody reviewed, and an edit can erase the `[Accepted by]` record. Decide whether content edits clear `reviewed`.
 - [ ] `due`, `remind_at`, `start`, and `end` are unvalidated strings compared lexically, so non-UTC values surface at the wrong time. Decide whether to validate them.
 - [x] (resolved on `db-move`) `db.connect`: two servers starting together on a new file can crash at `PRAGMA journal_mode = WAL` with `database is locked` (28 of 80 launches in testing). A file already in WAL mode is unaffected, so this matters for a new or mistyped path, not for the move itself. The `db-move` feature fixes it.
-- [ ] `database is locked` is not mapped to `ToolError`, so callers see no reason and no retry hint. `busy_timeout = 5000` measured about 13 seconds on SQLite 3.53.1.
+- [ ] `database is locked` is not mapped to `ToolError`, so callers see no reason and no retry hint. `db.migrate` writes `schema_version` on every startup, so a write lock held past the busy timeout also crashes startup with that error. `busy_timeout = 5000` measured about 13 seconds on SQLite 3.53.1.
+- [ ] A database created through the default path gets folder mode 755 and file mode 644 under umask 022, although it can hold personal data. The moved database gets 700 and 600 from the runbook. Decide whether `db.connect` tightens the modes.
 - [ ] `due=""` counts as permanently overdue. `task_update` cannot null a field, so `""` is the obvious way to try clearing one.
 - [ ] `scripts/promote.sh`: the install ignores `uv.lock`, so transitive packages drift from the tested set. A source-only promote may also reuse a stale build (unverified). Consider installing from the lock with `--reinstall`.
 
@@ -47,7 +48,7 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 - [ ] The user restarts `hermes gateway` and idle Claude Code sessions so servers load the 2026-11-01 lost-write fix. 26 servers predated that promote.
 - [ ] Confirm a Codex fleetcom call in an interactive session. `codex exec` refuses it: "MCP tool call requires approval, but approval policy is never".
 - [ ] Delete `HERMES_TASK.md` and `HERMES_RESULT.md` (approved by the user). The auto mode permission check blocked it.
-- [ ] After `fix-default-db-path` merges, plan moving the database to `~/.fleetcom/` as a separate feature (`dev/features/`). The machine is backed up with Time Machine (from the user, 2026-11-01). `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` is a one-time migration with a hardcoded `db/fleetcom.db` path, so retire it or remove its fleetcom lines with the move.
+- [x] (resolved 2026-11-01: planned in `dev/features/db-move.md`) After `fix-default-db-path` merges, plan moving the database to `~/.fleetcom/` as a separate feature (`dev/features/`). The machine is backed up with Time Machine (from the user, 2026-11-01). `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` is a one-time migration with a hardcoded `db/fleetcom.db` path, so retire it or remove its fleetcom lines with the move.
 - [ ] Database move constraints, from hermes-manager on 2026-11-01. Five Hermes configs pass `--db`: `~/.hermes/config.yaml` and the builder, coach, controller, and secretary profiles. The user approves those exact edits. The gateway-ops skill requires a stopped gateway, all paths updated before the move, and one real write at the new path. `~/Claude/-hermes/db/` is current practice for fleet databases, not a stated policy (inferred by hermes-manager). `~/Claude/-hermes/AGENTS.md:55` has the old path, and the gateway-ops skill needs updating after the move.
 
 ## Open questions
@@ -60,6 +61,10 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 ## Decisions
 
 Never rewrite a past decision; add a dated entry that supersedes it.
+
+### 2026-11-01 - SUPERSEDES the default in the entry below: default database path is `~/.fleetcom/fleetcom.db`
+Why: the live database moves there, and a default naming the old path would recreate an empty file in the Hermes folder.
+Rejected: keeping the old default until after the cutover, because `scripts/promote.sh` runs after the move and controls when the new default goes live.
 
 ### 2026-11-01 - Move the live database to `~/.fleetcom/` in a separate change (`ok`)
 Why: the database is shared by Claude Code, Hermes, and soon Codex, so it should not live in the Hermes folder or its git working tree. The move depends on the Hermes reconcile script and the backup path, neither of which has been checked.

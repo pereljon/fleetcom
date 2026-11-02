@@ -1,5 +1,7 @@
 import multiprocessing
 import sqlite3
+import time
+from typing import ClassVar
 
 import pytest
 
@@ -59,8 +61,10 @@ def test_default_db_path_is_the_fleetcom_home_folder(monkeypatch, tmp_path):
 def _connection_failing_wal(message, failures):
     class FailingWal(sqlite3.Connection):
         attempts = 0
+        statements: ClassVar[list[str]] = []
 
         def execute(self, sql, *args):
+            FailingWal.statements.append(sql)
             if sql == "PRAGMA journal_mode = WAL":
                 FailingWal.attempts += 1
                 if FailingWal.attempts <= failures:
@@ -96,6 +100,7 @@ def test_connect_retries_a_locked_wal_pragma(monkeypatch, tmp_path, fake_clock):
     _connect_with_factory(monkeypatch, factory)
     conn = db.connect(str(tmp_path / "f.db"))
     assert factory.attempts == 3
+    assert "PRAGMA busy_timeout = 5000" in factory.statements
     assert conn.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
     assert conn.execute("PRAGMA foreign_keys").fetchone()[0] == 1
 
@@ -108,6 +113,7 @@ def test_connect_gives_up_on_a_lock_after_ten_seconds(
     with pytest.raises(sqlite3.OperationalError, match="locked"):
         db.connect(str(tmp_path / "f.db"))
     assert 10 <= fake_clock["now"] < 10.1
+    assert factory.attempts > 100
 
 
 def test_connect_does_not_retry_other_errors(monkeypatch, tmp_path, fake_clock):
@@ -129,13 +135,19 @@ def test_servers_starting_together_on_a_new_file_all_succeed(tmp_path):
         path = str(tmp_path / f"{round_number}.db")
         barrier = mp.Barrier(6)
         processes = [
-            mp.Process(target=_open_at_barrier, args=(path, barrier)) for _ in range(6)
+            mp.Process(target=_open_at_barrier, args=(path, barrier), daemon=True)
+            for _ in range(6)
         ]
         for process in processes:
             process.start()
-        for process in processes:
-            process.join(timeout=30)
-        assert [process.exitcode for process in processes] == [0] * 6
+        deadline = time.monotonic() + 30
+        try:
+            for process in processes:
+                process.join(timeout=max(0, deadline - time.monotonic()))
+            assert [process.exitcode for process in processes] == [0] * 6
+        finally:
+            for process in processes:
+                process.kill()
         check = sqlite3.connect(path)
         assert check.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
         check.close()
