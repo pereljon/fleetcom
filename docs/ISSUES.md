@@ -30,18 +30,19 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 - [ ] Document the deploy flow in README, CODEMAP, and `AGENTS.md`, including "never hand-edit `deploy/`".
 - [ ] Any wrong `--db` or `FLEETCOM_DB_PATH` silently creates an empty database. `~` is not expanded. Consider an explicit flag to create a new database.
 - [ ] Decide how Codex gets the skill. Codex skill delivery has not been checked.
-- [ ] Check `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` (owned by Hermes) for the database path and WAL handling. `fleetcom.db` alone is out of date, because recent data sits in `fleetcom.db-wal`.
+- [x] Check `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` (owned by Hermes) for the database path and WAL handling. `fleetcom.db` alone is out of date, because recent data sits in `fleetcom.db-wal`. (resolved 2026-11-01): checked by hermes-manager. The script hardcodes the old path and must not be rerun after the move; see `dev/features/db-move.md`.
 
 - [ ] Editing a reviewed task's `description` or `result_summary` keeps `reviewed=1` on content nobody reviewed, and an edit can erase the `[Accepted by]` record. Decide whether content edits clear `reviewed`.
 - [ ] `due`, `remind_at`, `start`, and `end` are unvalidated strings compared lexically, so non-UTC values surface at the wrong time. Decide whether to validate them.
-- [ ] `db.connect`: two servers starting together on a new file can crash at `PRAGMA journal_mode = WAL` with `database is locked` (28 of 80 launches in testing). A file already in WAL mode is unaffected, so this matters for the database move and for a mistyped `--db`.
+- [ ] `db.connect`: two servers starting together on a new file can crash at `PRAGMA journal_mode = WAL` with `database is locked` (28 of 80 launches in testing). A file already in WAL mode is unaffected, so this matters for a new or mistyped path, not for the move itself. The `db-move` feature fixes it.
 - [ ] `database is locked` is not mapped to `ToolError`, so callers see no reason and no retry hint. `busy_timeout = 5000` measured about 13 seconds on SQLite 3.53.1.
 - [ ] `due=""` counts as permanently overdue. `task_update` cannot null a field, so `""` is the obvious way to try clearing one.
 - [ ] `scripts/promote.sh`: the install ignores `uv.lock`, so transitive packages drift from the tested set. A source-only promote may also reuse a stale build (unverified). Consider installing from the lock with `--reinstall`.
 
 ## Next steps
 
-- [ ] Next feature: write `dev/features/db-move.md` and its test plan. Include the startup crash on a new database file. Backups are the user's and stay out of the design.
+- [x] Next feature: write `dev/features/db-move.md` and its test plan. Include the startup crash on a new database file. Backups are the user's and stay out of the design. (resolved 2026-11-01): both written.
+- [ ] Review the `db-move` test plan with the user, then build `db-move` on a branch.
 - [ ] The user restarts `hermes gateway` and idle Claude Code sessions so servers load the 2026-11-01 lost-write fix. 26 servers predated that promote.
 - [ ] Confirm a Codex fleetcom call in an interactive session. `codex exec` refuses it: "MCP tool call requires approval, but approval policy is never".
 - [ ] Delete `HERMES_TASK.md` and `HERMES_RESULT.md` (approved by the user). The auto mode permission check blocked it.
