@@ -56,7 +56,16 @@ Codex may need an interactive session, because `codex exec` refuses the tool cal
 - `uv run pytest`: 54 passed. `ruff check` and `ruff format --check`: clean.
 - The startup race test failed on the old `db.connect` with `database is locked`, then passed with the fix.
 - Rehearsal passed on a generated database, with runbook commands run literally under a temp `HOME`. A held connection was reported and refused. The clean run gave `moved`, `ok`, `wal`, matching hashes for the file and the copy, and no sidecars. A folder at the destination was refused with the source intact. Rollback restored a matching hash.
-- The live checks have not run.
+
+Live cutover, 2026-11-01 at 20:52 PST:
+
+- Zero holders before the move. The `.dump` hash matched at the new path and in the one-time copy. Results were `moved`, `ok`, and `wal`, with 50 tasks, 0 events, and 0 contacts.
+- The installed build printed the new default at `5008c37`.
+- A real row appeared at the new path through the installed server, then was deleted.
+- All 5 gateway servers opened the new path, and no `fleetcom.db` exists at the old path. `tmutil isexcluded` printed `[Included]`.
+- Cron returned: "Important-mail monitor" ran at 20:53:53 with `ok`, and the 21:00 run dispatched on time.
+- The one-time copy was removed after these checks.
+- Not checked: a Codex call at the new path.
 
 ## Review findings
 

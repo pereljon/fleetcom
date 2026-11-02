@@ -2,7 +2,7 @@
 
 Owns: the design and cutover runbook for moving the live database to `~/.fleetcom/`. Does NOT hold test cases or review findings (`db-move-tests.md`).
 
-Status: built on branch `db-move` and reviewed 2026-11-01. The cutover has not run. Investigated against commit `08abf75`, Python's SQLite 3.53.1, and Homebrew's `sqlite3` CLI 3.54.1.
+Status: shipped 2026-11-01. The cutover ran at 20:52 PST from a live session, with the changes listed under Cutover as run. Investigated against commit `08abf75`, Python's SQLite 3.53.1, and Homebrew's `sqlite3` CLI 3.54.1.
 
 ## Goal
 
@@ -112,6 +112,16 @@ N=~/.fleetcom/fleetcom.db
 2. Run `mv -n "$N" "$D"`, then restore the mode that step 8 recorded with `chmod`.
 3. Revert the config edits from step 9.
 4. Remove any sidecars and `$N.pre-move` at the destination after looking at them, then run `rmdir ~/.fleetcom`.
+
+## Cutover as run
+
+The runbook above is the plan. The live run differed in these ways:
+
+- The session that ran it stayed up. It stopped four Claude Code fleetcom servers by PID instead of stopping the sessions, then restarted the sessions at the end.
+- The five Hermes configs changed through `hermes config set`, with a read-back, because the gateway-ops skill forbids hand edits. `~/.claude.json` and `~/.codex/config.toml` changed by one exact string replacement.
+- The search in step 2 was limited to config file types and skipped Hermes `sessions/` and `pending/` folders, which only hold old copies of the path.
+- The dashboard stop used `launchctl bootout`, and a second dashboard outside launchd stopped by `kill -TERM`. The gateway and dashboard started with `launchctl bootstrap`, because a booted-out job has nothing for `kickstart` to act on.
+- The real write ran through the installed `fleetcom-mcp` over stdio before Hermes started. Its row was checked with SQL, because `task_list` hides new rows past its limit (`docs/ISSUES.md`, Bugs).
 
 ## After the cutover
 

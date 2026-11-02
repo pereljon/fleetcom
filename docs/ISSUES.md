@@ -4,6 +4,8 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 
 ## Bugs
 
+- [ ] Every list path truncates silently at `limit` (default 50), with no signal in the response: `task_list` with any filter, `due_now`, `agenda_today`, `event_list`, and `contact_search`. `crud.list_rows` sorts oldest first, so unfiltered and `owner` lists drop the newest tasks, and the live database holds 50 tasks. A subagent review confirmed this by experiment on 2026-11-01. A second review (Opus, high effort) showed that newest first alone silently hides old live work. Recommended fix: order tasks by active, then unreviewed, then newest, with a `rowid` tiebreak; add a `truncated` flag on every list response; reject `limit < 1`; keep the default at 50.
+
 ## Planned
 
 - [x] Full restart: remove Go implementation, rebuild as Python office primitives (tasks/reminders/events/contacts) per `INTENT.md` (done 2026-09-13)
@@ -44,12 +46,14 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 
 - [x] Next feature: write `dev/features/db-move.md` and its test plan. Include the startup crash on a new database file. Backups are the user's and stay out of the design. (resolved 2026-11-01): both written.
 - [x] Review the `db-move` test plan with the user, then build `db-move` on a branch. (resolved 2026-11-01): approved, built on `db-move`.
-- [ ] Review and merge `db-move`, then run the cutover in `dev/features/db-move.md`. The user approved the config edits and a one-time copy. Stopping the dashboard jobs is not yet approved.
-- [ ] The user restarts `hermes gateway` and idle Claude Code sessions so servers load the 2026-11-01 lost-write fix. 26 servers predated that promote.
+- [x] Review and merge `db-move`, then run the cutover in `dev/features/db-move.md`. (resolved 2026-11-01): cut over at 20:52 PST; results are in `dev/features/db-move-tests.md`.
+- [ ] hermes-manager retires `reconcile-fleet-dbs.sh` and updates `~/Claude/-hermes/AGENTS.md:55` and the gateway-ops skill. Nobody reruns the script.
+- [ ] Confirm a fleetcom call from Codex at the new path. No Codex session ran at cutover.
+- [x] The user restarts `hermes gateway` and idle Claude Code sessions so servers load the 2026-11-01 lost-write fix. 26 servers predated that promote. (resolved 2026-11-01): every server was restarted at the cutover.
 - [ ] Confirm a Codex fleetcom call in an interactive session. `codex exec` refuses it: "MCP tool call requires approval, but approval policy is never".
 - [ ] Delete `HERMES_TASK.md` and `HERMES_RESULT.md` (approved by the user). The auto mode permission check blocked it.
 - [x] (resolved 2026-11-01: planned in `dev/features/db-move.md`) After `fix-default-db-path` merges, plan moving the database to `~/.fleetcom/` as a separate feature (`dev/features/`). The machine is backed up with Time Machine (from the user, 2026-11-01). `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` is a one-time migration with a hardcoded `db/fleetcom.db` path, so retire it or remove its fleetcom lines with the move.
-- [ ] Database move constraints, from hermes-manager on 2026-11-01. Five Hermes configs pass `--db`: `~/.hermes/config.yaml` and the builder, coach, controller, and secretary profiles. The user approves those exact edits. The gateway-ops skill requires a stopped gateway, all paths updated before the move, and one real write at the new path. `~/Claude/-hermes/db/` is current practice for fleet databases, not a stated policy (inferred by hermes-manager). `~/Claude/-hermes/AGENTS.md:55` has the old path, and the gateway-ops skill needs updating after the move.
+- [x] (resolved 2026-11-01: applied at cutover) Database move constraints, from hermes-manager on 2026-11-01. Five Hermes configs pass `--db`: `~/.hermes/config.yaml` and the builder, coach, controller, and secretary profiles. The user approves those exact edits. The gateway-ops skill requires a stopped gateway, all paths updated before the move, and one real write at the new path. `~/Claude/-hermes/db/` is current practice for fleet databases, not a stated policy (inferred by hermes-manager). `~/Claude/-hermes/AGENTS.md:55` has the old path, and the gateway-ops skill needs updating after the move.
 
 ## Open questions
 
