@@ -2,7 +2,7 @@
 
 Owns: the design for fixing silent truncation on list tools. Does NOT hold test cases or review findings (`list-truncation-tests.md`).
 
-Status: designed 2026-11-01, revised after the architect review, not built. Investigated against commit `07dd569` and SQLite 3.53.1.
+Status: built on branch `list-truncation` 2026-11-01, not merged or promoted. Investigated against commit `07dd569` and SQLite 3.53.1.
 
 ## Goal
 
@@ -30,7 +30,7 @@ Two read-only reviews on 2026-11-01 ran these on scratch databases. Neither touc
    ORDER BY status = 'completed', status = 'completed' AND reviewed, created_at DESC, rowid DESC
    ```
    The second term keeps an active row with `reviewed=1` in date order among active rows.
-2. Move the plain list into `tasks.list`, so one bespoke query serves both branches with two literal sort clauses. Delete `crud.list_rows` and `tasks.FILTERS`. The filter names become literals, so no filter name is interpolated. This needs the user's approval, because it removes the filter allow-list.
+2. Move the plain list into `tasks.list`, so one bespoke query serves both branches with two literal sort clauses. Delete `crud.list_rows` and `tasks.FILTERS`. The filter names become literals, so no filter name is interpolated. The user approved this on 2026-11-01.
 3. Add `util.capped(fetch, limit)`. It raises `ValueError` unless `limit` is between 1 and `MAX_LIMIT`, calls `fetch(limit + 1)`, and returns `(rows[:limit], truncated)`. `_anticipated` already turns `ValueError` into `ToolError`. `util.DEFAULT_LIMIT` is 50 and `util.MAX_LIMIT` is 1,000,000.
 4. Use `util.capped` in `task_list`, `event_list`, and `contact_search`. Each returns `truncated` as the first key. Entity functions keep returning lists.
 5. Use `util.capped` in `agenda.today`, and return `tasks_truncated`, `events_truncated`, `tasks_due`, and `events_today` in that order.
@@ -41,7 +41,7 @@ Two read-only reviews on 2026-11-01 ran these on scratch databases. Neither touc
 
 Tool docstrings are the one channel known to reach every client, so each list docstring carries its rule.
 
-- All list tools: "`truncated` true means rows were cut. Try a narrower filter first, then a larger `limit`. The default `limit` is 50."
+- All list tools: "`truncated` true means rows were cut. Try a narrower filter, range, or query first, then a larger `limit`. The default `limit` is 50."
 - `task_list`, when `due_now` is off: "Rows sort active, then unreviewed, then reviewed. If the last row is `completed` with `reviewed=1`, only accepted history was cut, so no retry is needed."
 - `agenda_today`: "If a flag is true, call `task_list(due_now=True, limit=N)` or `event_list` from `T00:00:00Z` to `T23:59:59Z` on the current UTC date."
 - `SKILL.md`: add the review queue query, `task_list(status="completed")`, with the same `truncated` rule.
@@ -78,6 +78,10 @@ Rejected: `offset` and `total`, because no requirement needs them. Rejected: onl
 ### 2026-11-01 - Reject `limit < 1` (`firm`)
 Why: `limit + 1` makes a negative limit return nothing with no flag.
 Rejected: leaving `limit` unvalidated.
+
+### 2026-11-01 - Delete `crud.list_rows` and its filter allow-list (`firm`)
+Why: `tasks.list` was its one caller, and literal filter names leave nothing to guard. The user approved the removal.
+Rejected: keeping `list_rows` with an `order_by` parameter, which adds raw SQL to the generic engine.
 
 ### 2026-11-01 - An upper bound on `limit` (`delegated`)
 Why: `limit + 1` overflows SQLite's integer at `2**63 - 1`, and the bare error hides the reason. Agents that lose `limit=-1` may try a huge number. One million is far above any list this notebook holds.

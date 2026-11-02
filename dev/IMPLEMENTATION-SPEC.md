@@ -9,7 +9,7 @@ Fleetcom is a single Python process, run on demand by an MCP client (Claude Code
 
 Storage is one SQLite file, opened once per process with `PRAGMA journal_mode=WAL`, `busy_timeout=5000`, `foreign_keys=ON`. Three independent tables hold the primitives (`tasks`, `events`, `contacts`); there is no unified "item" table and no cross-entity foreign keys — each row is self-contained aside from the plain-string `owner` (nullable) and `created_by` (required) fields.
 
-`src/fleetcom/crud.py` is a small generic engine (`create`/`get`/`list_rows`/`update`/`delete`) parameterized by table name and an allow-listed field set, used by all three entity modules (`tasks.py`, `events.py`, `contacts.py`). Each entity module adds its own bespoke queries where plain equality filtering isn't enough (`tasks.list(due_now=True)`, `events.list_in_range`, `contacts.search`), and `tasks.accept`/`tasks.reject` bypass the generic engine entirely for status-gated transitions the engine has no concept of.
+`src/fleetcom/crud.py` is a small generic engine (`create`/`get`/`update`/`delete`) parameterized by table name and an allow-listed field set, used by all three entity modules (`tasks.py`, `events.py`, `contacts.py`). Each entity module writes its own list query (`tasks.list`, `events.list_in_range`, `contacts.search`), and `util.capped` adds the `truncated` result above them, and `tasks.accept`/`tasks.reject` bypass the generic engine entirely for status-gated transitions the engine has no concept of.
 
 `src/fleetcom/agenda.py` aggregates across `tasks` and `events` for a single "what needs attention today" query.
 

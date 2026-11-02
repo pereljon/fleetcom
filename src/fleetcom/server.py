@@ -167,7 +167,7 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
         start: str, end: str, limit: int = util.DEFAULT_LIMIT
     ) -> dict[str, Any]:
         """List events whose start falls within [start, end] (ISO-8601).
-        truncated=true means rows were cut: try a narrower filter first, then a larger
+        truncated=true means rows were cut: try a narrower range first, then a larger
         limit (default 50)."""
         rows, truncated = util.capped(
             lambda n: events.list_in_range(conn, start=start, end=end, limit=n), limit
@@ -232,7 +232,7 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
     @_anticipated
     def contact_search(query: str, limit: int = util.DEFAULT_LIMIT) -> dict[str, Any]:
         """Search contacts by a substring match on name or tags.
-        truncated=true means rows were cut: try a narrower filter first, then a larger
+        truncated=true means rows were cut: try a narrower query first, then a larger
         limit (default 50)."""
         rows, truncated = util.capped(
             lambda n: contacts.search(conn, query=query, limit=n), limit

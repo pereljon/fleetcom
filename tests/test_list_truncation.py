@@ -3,7 +3,7 @@ import json
 import pytest
 from mcp import Client
 
-from fleetcom import agenda, contacts, db, events, tasks, util
+from fleetcom import agenda, contacts, events, tasks, util
 from fleetcom.server import build_server
 
 OLD = "2026-01-01T00:00:00Z"
@@ -20,15 +20,13 @@ LIST_CALLS = {
 
 
 @pytest.fixture
-def conn(tmp_path):
-    conn = db.connect(str(tmp_path / "fleetcom.db"))
-    db.migrate(conn)
-    return conn
+def server(conn):
+    return build_server(conn)
 
 
 @pytest.fixture
-def server(conn):
-    return build_server(conn)
+def fixed_clock(monkeypatch):
+    monkeypatch.setattr(util, "now_iso", lambda: "2026-06-01T12:00:00Z")
 
 
 def add_task(conn, summary="task", created_at=OLD, **columns):
@@ -230,8 +228,8 @@ async def test_each_finished_tier_is_newest_first(conn, server):
 
 
 async def test_reviewed_flag_does_not_lower_an_active_task(conn, server):
-    older = add_task(conn, "older", OLD, reviewed=1)
-    newer = add_task(conn, "newer", NEW)
+    older = add_task(conn, "older", OLD)
+    newer = add_task(conn, "newer", NEW, reviewed=1)
     done = add_task(conn, "done", "2026-07-01T00:00:00Z", status="completed")
 
     result = await call(server, "task_list")
@@ -272,7 +270,9 @@ async def test_due_now_keeps_oldest_due_first(conn, server):
     ("due", "today", "tasks_cut", "events_cut"),
     [(51, 50, True, False), (50, 51, False, True)],
 )
-def test_each_agenda_flag_follows_its_own_list(conn, due, today, tasks_cut, events_cut):
+def test_each_agenda_flag_follows_its_own_list(
+    conn, fixed_clock, due, today, tasks_cut, events_cut
+):
     add_due(conn, due)
     add_events_today(conn, today)
 
@@ -284,7 +284,7 @@ def test_each_agenda_flag_follows_its_own_list(conn, due, today, tasks_cut, even
     assert len(result["events_today"]) == 50
 
 
-async def test_named_agenda_widening_calls_return_every_row(conn, server):
+async def test_named_agenda_widening_calls_return_every_row(conn, server, fixed_clock):
     add_due(conn, 51)
     add_events_today(conn, 51)
     today = util.now_iso()[:10]

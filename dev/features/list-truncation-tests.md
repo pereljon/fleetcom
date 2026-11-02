@@ -19,7 +19,7 @@ Flags exist only above the entity layer. Run flag tests through the in-memory `C
 | CoS query | The same data through `task_list(status="completed")` | The unreviewed task is first |
 | Order | Active task oldest, unreviewed in the middle, reviewed newest, with `open`, `in-progress`, and `blocked` rows | Active, then unreviewed, then reviewed |
 | Order within tiers | Two rows each in the unreviewed and reviewed tiers | Newest first in each tier |
-| Active with `reviewed=1` | An older active row with `reviewed=1` set directly, and a newer active row | Newest first, and both come before completed rows |
+| Active with `reviewed=1` | An older active row, and a newer active row with `reviewed=1` set directly | Newest first, and both come before completed rows |
 | Still flagged | 61 live tasks | 50 rows, and `truncated` is true |
 | Owner filter | One old open task and 50 newer completed tasks for an owner, plus another owner's rows | The old open task is returned, and no other owner's row appears |
 | `due_now` | More than 50 overdue tasks | Oldest-due order is unchanged, and `truncated` is true |
@@ -39,6 +39,15 @@ The first test must fail on the current code before the fix lands.
 3. Confirm `agenda_today` returns both flags first through a Hermes client.
 4. Run one `task_list` from Hermes, Claude Code, and Codex. Codex may need an interactive session, because `codex exec` refuses the tool call under approval policy `never`.
 
+## Results
+
+2026-11-01, on branch `list-truncation`:
+
+- `uv run pytest`: 99 passed. `ruff check` and `ruff format --check`: clean.
+- 38 of the 45 new test cases failed on the old code, including the first test. The other 7 guard against a regression, and passed on the old code.
+- With the sort reduced to newest first alone, 9 test cases failed.
+- The live checks have not run, because the build is not promoted.
+
 ## Review findings
 
 A `Plan` agent reviewed both docs on 2026-11-01 (Opus, high effort), using in-memory SQLite and in-memory MCP clients. The main session confirmed the Hermes 50,000 character threshold in source, the code findings in `src/`, and the live counts with read-only SQL. The other findings rest on the reviewer's evidence.
@@ -48,7 +57,7 @@ A `Plan` agent reviewed both docs on 2026-11-01 (Opus, high effort), using in-me
 | B1 | Agenda flags at the tail vanish when Hermes spills a result | `agenda.py:11-16`; flag offset 44,548 of 44,601; Hermes preview is 1,500 characters | Flags come first; Flag position test |
 | S1 | `truncated` stays true on the common call, even when only history was cut | No code archives rows | `task_list` docstring gives the last-row rule |
 | S2 | The retry advice does not fit `agenda_today`, and docstrings omit `limit` | `server.py:77,161,221,258` | Exact widening calls in the docstrings |
-| S3 | `order_by` adds an unguarded SQL parameter for one caller | `crud.list_rows` has one caller, `tasks.py:70` | Bespoke query; `crud.list_rows` deleted, pending the user's approval |
+| S3 | `order_by` adds an unguarded SQL parameter for one caller | `crud.list_rows` has one caller, `tasks.py:70` | Bespoke query; `crud.list_rows` deleted with the user's approval |
 | S4 | `crud.page` has the wrong module and shape for the agenda | Touches no table; fixed key name | `util.capped` |
 | S5 | The review queue can overflow with unowned acknowledged rows (uncertain) | 0 unreviewed completed rows live | Not a problem today; CoS follow-up for hermes-manager |
 | S6 | The Allow-list row cited a test that does not exist | Grep of `tests/` | Row deleted |
@@ -65,3 +74,15 @@ A `Plan` agent reviewed both docs on 2026-11-01 (Opus, high effort), using in-me
 | M6 | Smaller test gaps | Plan review | Three cases added |
 | M7 | Step 7 omitted three files | Plan review | Added |
 | M8 | Docs can describe a key that an old server lacks | `promote.sh` replaces the skill first | Restart straight after promote |
+
+Code review of `list-truncation` at `ea55e18` by a subagent on 2026-11-01 (Opus, high effort). It found no production defect. On a 400-row random database, `main` and the branch returned the same row sets across 70 filter combinations. The reviewer killed 26 of 27 mutations, and the survivor is F1.
+
+| ID | Finding | Evidence | Resolution |
+|----|---------|----------|------------|
+| F1 | The active `reviewed=1` test could not catch a bare `reviewed` sort term | Mutant passed all 99 tests | `reviewed=1` moved to the newer row; mutant now fails |
+| F2 | `SKILL.md` and `tools.md` had no truncation rule | Empty diff under `src/skills` | Updated |
+| F3 | No record of approval for removing the allow-list | The docs still said pending | The user approved; recorded in Decisions |
+| F4 | Two tests could fail across UTC midnight | Forced rollover failed both | `fixed_clock` fixture; `tests/test_agenda.py` keeps the same pattern |
+| F5 | A local `conn` fixture skipped the close | `tests/conftest.py:6-10` closes | Local fixture deleted |
+| F6 | "Narrower filter" fit only `task_list` | `server.py:170,235` | Docstrings say range and query |
+| F7 | The last-row rule needs the last row, which a Hermes preview hides (uncertain) | Design figures; not tested on Hermes | Accepted: the flag still shows, and the spill file holds the row |
