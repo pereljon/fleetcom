@@ -47,3 +47,11 @@ def test_default_db_path_honors_env_override(monkeypatch, tmp_path):
     override = str(tmp_path / "custom.db")
     monkeypatch.setenv("FLEETCOM_DB_PATH", override)
     assert db.default_db_path() == override
+
+
+def test_default_db_path_is_the_live_db_folder(monkeypatch, tmp_path):
+    monkeypatch.delenv("FLEETCOM_DB_PATH", raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    assert db.default_db_path() == str(
+        tmp_path / "Claude" / "-hermes" / "db" / "fleetcom.db"
+    )

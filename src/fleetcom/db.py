@@ -70,7 +70,7 @@ def default_db_path() -> str:
     override = os.environ.get("FLEETCOM_DB_PATH")
     if override:
         return override
-    return str(Path.home() / "Claude" / "-hermes" / "fleetcom.db")
+    return str(Path.home() / "Claude" / "-hermes" / "db" / "fleetcom.db")
 
 
 def connect(path: str) -> sqlite3.Connection:

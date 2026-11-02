@@ -19,7 +19,7 @@ Storage is one SQLite file, opened once per process with `PRAGMA journal_mode=WA
 
 | Setting | Source | Default |
 |---|---|---|
-| Database path | `FLEETCOM_DB_PATH` env var | `~/Claude/-hermes/fleetcom.db` |
+| Database path | `--db` flag, then `FLEETCOM_DB_PATH` env var | `~/Claude/-hermes/db/fleetcom.db` |
 | Python version | `pyproject.toml` `requires-python` | `>=3.11` |
 | MCP SDK | `mcp` dependency | latest (currently 2.x, `MCPServer` API) |
 
@@ -27,15 +27,15 @@ No other configuration exists. There is no policy engine, no agent registry, and
 
 ## Design Decisions
 
-See `context/decisions.md` for the dated log, including the 2026-09-13 restart. Summary of what's different from the original (Go, Mission-Control-style) design this replaced:
+See `docs/ISSUES.md` (Decisions) for the dated log, including the 2026-09-13 restart. Summary of what's different from the original (Go, Mission-Control-style) design this replaced:
 
 - **No atomic task claiming.** Ownership is a plain mutable string column. This is a shared office notebook for a small, trusted fleet, not a race-safe work queue for a large pool of untrusted, concurrently-competing workers.
 - **No RFC-2119 fleet policy engine.** Fleet-wide conventions stay in `CLAUDE.md`; Fleetcom doesn't distribute or enforce them.
 - **No agent directory / heartbeat table.** Nothing here tracks who's online or what capabilities an agent has.
 - **Separate tables per distinct concept, not one unified `office_items` table.** Simpler DDL per entity, no shared CHECK-constraint matrix.
-- **Reminders are not their own table.** Merged into `tasks` (2026-09-13, four-round design review in `context/decisions.md`) after concluding a "completion" bit only ever means creator-ownership, jP-ownership, or system delivery metadata — none of which need a fourth primitive. `task_list(due_now=True)` ports the old `reminder_list_due` query exactly. Still pull-only: no push notifications, no background polling loop.
+- **Reminders are not their own table.** Merged into `tasks` (2026-09-13, four-round design review in `docs/ISSUES.md` (Decisions)) after concluding a "completion" bit only ever means creator-ownership, jP-ownership, or system delivery metadata — none of which need a fourth primitive. `task_list(due_now=True)` ports the old `reminder_list_due` query exactly. Still pull-only: no push notifications, no background polling loop.
 - **Completion and review are separate axes.** `status='completed'` (anyone can set, via generic `task_update`) and `reviewed=1` (only via the bespoke `tasks.accept`, gated on current status) model "the owner claims it's done" and "someone else confirmed it" as independent facts, not sequential enum values — see `dev/SKELETON.md` for why this couldn't be done as a plain CHECK-constraint enum extension.
 
 ## Deprecation Policy
 
-Pre-1.0, no backward-compatibility guarantees are made across tool signatures or the database schema. The prior Go implementation (atomic claiming, `office_items`, `policies`, `activity_log`, agent directory) was fully removed rather than deprecated in place — see the 2026-09-13 restart entry in `context/decisions.md` for why.
+Pre-1.0, no backward-compatibility guarantees are made across tool signatures or the database schema. The prior Go implementation (atomic claiming, `office_items`, `policies`, `activity_log`, agent directory) was fully removed rather than deprecated in place — see the 2026-09-13 restart entry in `docs/ISSUES.md` (Decisions) for why.
