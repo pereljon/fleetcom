@@ -25,12 +25,18 @@ FIELDS = {
     "remind_at",
     "result_summary",
 }
-FILTERS = {"status", "owner"}
 
 # Appends in SQL so a concurrent edit from another server process isn't overwritten.
 _APPEND_DESCRIPTION = (
     "description = CASE WHEN COALESCE(description, '') = '' THEN ? "
     "ELSE description || char(10, 10) || ? END"
+)
+
+_DUE_ORDER = "MIN(COALESCE(remind_at, due), COALESCE(due, remind_at))"
+# Live work and the review queue must outrank accepted history once a list is cut.
+_LIST_ORDER = (
+    "status = 'completed', status = 'completed' AND reviewed, "
+    "created_at DESC, rowid DESC"
 )
 
 
@@ -64,23 +70,29 @@ def get(conn, id_: str) -> dict | None:
 
 
 def list(
-    conn, *, status=None, owner=None, due_now: bool = False, limit: int = 50
+    conn,
+    *,
+    status=None,
+    owner=None,
+    due_now: bool = False,
+    limit: int = util.DEFAULT_LIMIT,
 ) -> list[dict]:
-    if not due_now:
-        return crud.list_rows(
-            conn, TABLE, FILTERS, limit=limit, status=status, owner=owner
-        )
-
-    now = util.now_iso()
-    query = "SELECT * FROM tasks WHERE status != 'completed' AND (remind_at <= ? OR due <= ?)"
-    args: list = [now, now]
+    if due_now:
+        now = util.now_iso()
+        query = "SELECT * FROM tasks WHERE status != 'completed' AND (remind_at <= ? OR due <= ?)"
+        args: list = [now, now]
+        order = _DUE_ORDER
+    else:
+        query = "SELECT * FROM tasks WHERE 1=1"
+        args = []
+        order = _LIST_ORDER
     if status is not None:
         query += " AND status = ?"
         args.append(status)
     if owner is not None:
         query += " AND owner = ?"
         args.append(owner)
-    query += " ORDER BY MIN(COALESCE(remind_at, due), COALESCE(due, remind_at)) LIMIT ?"
+    query += f" ORDER BY {order} LIMIT ?"
     args.append(limit)
     return [dict(row) for row in conn.execute(query, args).fetchall()]
 

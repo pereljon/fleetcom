@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from . import crud
+from . import crud, util
 
 TABLE = "contacts"
 FIELDS = {"name", "kind", "email", "phone", "org", "notes", "tags"}
@@ -39,7 +39,7 @@ def get(conn, id_: str) -> dict | None:
     return crud.get(conn, TABLE, id_)
 
 
-def search(conn, *, query: str, limit: int = 50) -> list[dict]:
+def search(conn, *, query: str, limit: int = util.DEFAULT_LIMIT) -> list[dict]:
     """Case-insensitive substring match on name or tags."""
     escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     pattern = f"%{escaped}%"
