@@ -9,7 +9,8 @@ Nothing in this project has been released yet; the entries below reflect the cur
 - Add `src/fleetcom`: Python package with SQLite storage (WAL) for three tables (`tasks`, `events`, `contacts`) via a shared generic CRUD engine. `tasks` absorbs what a standalone `reminders` table did in an earlier iteration (`remind_at`), plus `blocked`/`blocked_reason` and a `completed`/`reviewed` two-axis completion model — see `docs/ISSUES.md` (Decisions) for the design review behind both.
 - Add `fleetcom-mcp`: stdio MCP server (official `mcp` SDK) exposing 15 tools — plain create/list/update/delete over tasks/events/contacts, `task_accept`/`task_reject` for the review gate, and `agenda_today` aggregating tasks due now with today's events.
 - Add `--db` CLI flag (`FLEETCOM_DB_PATH` env var still works; the flag takes precedence).
-- Change the default database path to `~/Claude/-hermes/db/fleetcom.db`, the live database.
+- Change the default database path to `~/.fleetcom/fleetcom.db`.
+- Fix servers crashing with `database is locked` when they start together on a new database file.
 - Fix a rejected write leaving its transaction open, which blocked writes from every other server.
 - Fix concurrent tool calls interleaving on the shared connection, which lost writes already reported as successful.
 - Fix `task_accept` and `task_reject` overwriting a concurrent `description` edit.

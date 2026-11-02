@@ -59,7 +59,7 @@ Fleetcom communicates over standard input/output (`stdio`). Point MCP clients at
   "mcpServers": {
     "fleetcom": {
       "command": "~/.local/bin/fleetcom-mcp",
-      "args": ["--db", "~/Claude/-hermes/db/fleetcom.db"]
+      "args": ["--db", "~/.fleetcom/fleetcom.db"]
     }
   }
 }
@@ -71,10 +71,10 @@ Fleetcom communicates over standard input/output (`stdio`). Point MCP clients at
 mcp_servers:
   fleetcom:
     command: ~/.local/bin/fleetcom-mcp
-    args: ["--db", "~/Claude/-hermes/db/fleetcom.db"]
+    args: ["--db", "~/.fleetcom/fleetcom.db"]
 ```
 
-The database path can be set either way: `--db <path>` (shown above) or the `FLEETCOM_DB_PATH` env var — the flag wins if both are given. Defaults to `~/Claude/-hermes/db/fleetcom.db` if neither is set.
+The database path can be set either way: `--db <path>` (shown above) or the `FLEETCOM_DB_PATH` env var — the flag wins if both are given. Defaults to `~/.fleetcom/fleetcom.db` if neither is set.
 
 ---
 

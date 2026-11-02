@@ -19,7 +19,7 @@ Storage is one SQLite file, opened once per process with `PRAGMA journal_mode=WA
 
 | Setting | Source | Default |
 |---|---|---|
-| Database path | `--db` flag, then `FLEETCOM_DB_PATH` env var | `~/Claude/-hermes/db/fleetcom.db` |
+| Database path | `--db` flag, then `FLEETCOM_DB_PATH` env var | `~/.fleetcom/fleetcom.db` |
 | Python version | `pyproject.toml` `requires-python` | `>=3.11` |
 | MCP SDK | `mcp` dependency | `>=2.2,<2.3` (`mcp.server.mcpserver` API) |
 

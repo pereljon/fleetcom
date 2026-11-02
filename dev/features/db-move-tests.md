@@ -49,6 +49,15 @@ Codex may need an interactive session, because `codex exec` refuses the tool cal
 - The tool interface does not change, so no prompt or tool doc changes.
 - The default path changes. Step 2 finds any client that relies on it.
 
+## Results
+
+2026-11-01, on branch `db-move`:
+
+- `uv run pytest`: 54 passed. `ruff check` and `ruff format --check`: clean.
+- The startup race test failed on the old `db.connect` with `database is locked`, then passed with the fix.
+- Rehearsal passed on a generated database, with runbook commands run literally under a temp `HOME`. A held connection was reported and refused. The clean run gave `moved`, `ok`, `wal`, matching hashes for the file and the copy, and no sidecars. A folder at the destination was refused with the source intact. Rollback restored a matching hash.
+- The live checks have not run.
+
 ## Review findings
 
 A subagent reviewed both docs on 2026-11-01 (Opus, high effort). The main session reproduced B1, B2, and B3 on generated files. The other findings rest on the reviewer's evidence.

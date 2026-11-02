@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import time
 from pathlib import Path
 
 SCHEMA_VERSION = 1
+WAL_RETRY_SECONDS = 10
+WAL_RETRY_DELAY_SECONDS = 0.02
 
 SCHEMA_DDL = """
 CREATE TABLE IF NOT EXISTS tasks (
@@ -70,7 +73,21 @@ def default_db_path() -> str:
     override = os.environ.get("FLEETCOM_DB_PATH")
     if override:
         return override
-    return str(Path.home() / "Claude" / "-hermes" / "db" / "fleetcom.db")
+    return str(Path.home() / ".fleetcom" / "fleetcom.db")
+
+
+def _enable_wal(conn: sqlite3.Connection) -> None:
+    # Switching a new file to WAL fails at once when another process is doing
+    # the same; the busy timeout does not cover this error.
+    deadline = time.monotonic() + WAL_RETRY_SECONDS
+    while True:
+        try:
+            conn.execute("PRAGMA journal_mode = WAL")
+            return
+        except sqlite3.OperationalError as error:
+            if "locked" not in str(error) or time.monotonic() >= deadline:
+                raise
+            time.sleep(WAL_RETRY_DELAY_SECONDS)
 
 
 def connect(path: str) -> sqlite3.Connection:
@@ -80,7 +97,7 @@ def connect(path: str) -> sqlite3.Connection:
         parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode = WAL")
+    _enable_wal(conn)
     conn.execute("PRAGMA busy_timeout = 5000")
     conn.execute("PRAGMA foreign_keys = ON")
     return conn

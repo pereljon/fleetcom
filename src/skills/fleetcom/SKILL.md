@@ -37,6 +37,6 @@ Rule of thumb: if the work should be *executed by a spawned Hermes profile worke
 
 ## Wiring notes
 
-- The database lives at `~/Claude/-hermes/db/fleetcom.db` by default; override with `FLEETCOM_DB_PATH` (env var) or `--db <path>` (CLI flag, takes precedence over the env var). A zero-byte `~/Claude/-hermes/fleetcom.db` is not the live database.
+- The database lives at `~/.fleetcom/fleetcom.db` by default; override with `FLEETCOM_DB_PATH` (env var) or `--db <path>` (CLI flag, takes precedence over the env var). Any `fleetcom.db` under `~/Claude/-hermes/` is not the live database.
 - Run the server via the installed `fleetcom-mcp` launcher (from `uv tool install`), never a bare `python3 -m fleetcom` or similar. The `mcp` package itself needs Python >=3.10 and this project targets >=3.11; macOS ships `/usr/bin/python3` at 3.9, which can't import `mcp` at all, and an MCP client config may not reliably fall back to a newer interpreter on your `PATH`. The installed launcher's shebang is pinned to the correct interpreter regardless of what `python3` resolves to in whatever environment the MCP client runs under.
 - Everything is pull-only. Nothing in fleetcom watches a clock or pushes a notification. Check `task_list(due_now=True)` or `agenda_today` when you want to know what needs attention (both include a passed `remind_at` or a passed `due`) — fleetcom will never tell you first.

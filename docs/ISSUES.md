@@ -34,7 +34,7 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 
 - [ ] Editing a reviewed task's `description` or `result_summary` keeps `reviewed=1` on content nobody reviewed, and an edit can erase the `[Accepted by]` record. Decide whether content edits clear `reviewed`.
 - [ ] `due`, `remind_at`, `start`, and `end` are unvalidated strings compared lexically, so non-UTC values surface at the wrong time. Decide whether to validate them.
-- [ ] `db.connect`: two servers starting together on a new file can crash at `PRAGMA journal_mode = WAL` with `database is locked` (28 of 80 launches in testing). A file already in WAL mode is unaffected, so this matters for a new or mistyped path, not for the move itself. The `db-move` feature fixes it.
+- [x] (resolved on `db-move`) `db.connect`: two servers starting together on a new file can crash at `PRAGMA journal_mode = WAL` with `database is locked` (28 of 80 launches in testing). A file already in WAL mode is unaffected, so this matters for a new or mistyped path, not for the move itself. The `db-move` feature fixes it.
 - [ ] `database is locked` is not mapped to `ToolError`, so callers see no reason and no retry hint. `busy_timeout = 5000` measured about 13 seconds on SQLite 3.53.1.
 - [ ] `due=""` counts as permanently overdue. `task_update` cannot null a field, so `""` is the obvious way to try clearing one.
 - [ ] `scripts/promote.sh`: the install ignores `uv.lock`, so transitive packages drift from the tested set. A source-only promote may also reuse a stale build (unverified). Consider installing from the lock with `--reinstall`.
@@ -42,7 +42,8 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 ## Next steps
 
 - [x] Next feature: write `dev/features/db-move.md` and its test plan. Include the startup crash on a new database file. Backups are the user's and stay out of the design. (resolved 2026-11-01): both written.
-- [ ] Review the `db-move` test plan with the user, then build `db-move` on a branch.
+- [x] Review the `db-move` test plan with the user, then build `db-move` on a branch. (resolved 2026-11-01): approved, built on `db-move`.
+- [ ] Review and merge `db-move`, then run the cutover in `dev/features/db-move.md`. The user approved the config edits and a one-time copy. Stopping the dashboard jobs is not yet approved.
 - [ ] The user restarts `hermes gateway` and idle Claude Code sessions so servers load the 2026-11-01 lost-write fix. 26 servers predated that promote.
 - [ ] Confirm a Codex fleetcom call in an interactive session. `codex exec` refuses it: "MCP tool call requires approval, but approval policy is never".
 - [ ] Delete `HERMES_TASK.md` and `HERMES_RESULT.md` (approved by the user). The auto mode permission check blocked it.
