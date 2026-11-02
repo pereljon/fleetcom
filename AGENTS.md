@@ -15,7 +15,7 @@ A shared notebook, not a distributed work queue.
 - **Pull-Only:** Nothing watches a clock or pushes a notification. Agents query when they want to know something.
 - **No Claims or Leases:** `owner` and `created_by` are plain strings, and concurrent writes are last-write-wins. The 2026-09-13 restart rejected atomic claiming (`docs/ISSUES.md`, Decisions).
 - **No Daemon:** Each MCP client launches its own stdio server. Client configs point every server at one SQLite file in WAL mode, so a write must never leave a transaction open.
-- **Separate Axes for Completion:** `status='completed'` is the owner's claim that the work is finished; on an unowned task it means acknowledged. `reviewed` says the claim was checked. Only `task_accept` sets `reviewed`, and any status change away from `completed` clears it.
+- **Separate Axes for Completion:** `status='completed'` is the owner's claim that the work is finished; on an unowned task it means acknowledged. `reviewed` says the claim was checked. Only `task_accept` sets `reviewed`, and any status change away from `completed` clears it. Editing a reviewed task's content does not clear it.
 - **Reminders Are Tasks:** `remind_at` alone is a reminder, `due` alone is a deadline, and both together give a deadline with advance warning. There is no separate reminders primitive.
 
 ## Read First

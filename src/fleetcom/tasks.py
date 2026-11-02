@@ -27,6 +27,12 @@ FIELDS = {
 }
 FILTERS = {"status", "owner"}
 
+# Appends in SQL so a concurrent edit from another server process isn't overwritten.
+_APPEND_DESCRIPTION = (
+    "description = CASE WHEN COALESCE(description, '') = '' THEN ? "
+    "ELSE description || char(10, 10) || ? END"
+)
+
 
 def create(
     conn,
@@ -74,7 +80,7 @@ def list(
     if owner is not None:
         query += " AND owner = ?"
         args.append(owner)
-    query += " ORDER BY COALESCE(remind_at, due) LIMIT ?"
+    query += " ORDER BY MIN(COALESCE(remind_at, due), COALESCE(due, remind_at)) LIMIT ?"
     args.append(limit)
     return [dict(row) for row in conn.execute(query, args).fetchall()]
 
@@ -100,17 +106,12 @@ def accept(conn, task_id: str, actor: str) -> bool:
     `actor` is not an enforced permission -- fleetcom has no agent-identity
     layer, so this can't verify the caller really is CoS.
     """
-    row = get(conn, task_id)
-    if row is None or row["status"] != "completed":
-        return False
-    existing = row.get("description") or ""
-    annotated = f"{existing}\n\n[Accepted by {actor}]".strip()
-    now = util.now_iso()
+    note = f"[Accepted by {actor}]"
     with conn:
         cur = conn.execute(
-            "UPDATE tasks SET reviewed = 1, description = ?, updated_at = ? "
+            f"UPDATE tasks SET reviewed = 1, {_APPEND_DESCRIPTION}, updated_at = ? "
             "WHERE id = ? AND status = 'completed'",
-            (annotated, now, task_id),
+            (note, note, util.now_iso(), task_id),
         )
     return cur.rowcount > 0
 
@@ -122,16 +123,11 @@ def reject(conn, task_id: str, actor: str, note: str) -> bool:
     it in the approved schema. `actor` is audit-trail data, not enforcement
     (see `accept`).
     """
-    row = get(conn, task_id)
-    if row is None or row["status"] != "completed":
-        return False
-    existing = row.get("description") or ""
-    annotated = f"{existing}\n\n[Rejected by {actor}]: {note}".strip()
-    now = util.now_iso()
+    annotation = f"[Rejected by {actor}]: {note}"
     with conn:
         cur = conn.execute(
-            "UPDATE tasks SET status = 'in-progress', reviewed = 0, description = ?, updated_at = ? "
-            "WHERE id = ? AND status = 'completed'",
-            (annotated, now, task_id),
+            f"UPDATE tasks SET status = 'in-progress', reviewed = 0, {_APPEND_DESCRIPTION}, "
+            "updated_at = ? WHERE id = ? AND status = 'completed'",
+            (annotation, annotation, util.now_iso(), task_id),
         )
     return cur.rowcount > 0

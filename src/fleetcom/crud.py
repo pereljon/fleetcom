@@ -7,6 +7,7 @@ closing off column-name injection even though values are parameterized.
 
 Writes run inside `with conn:` so a rejected statement rolls back. An open
 transaction would hold the write lock against every other server process.
+This does not isolate threads sharing a connection; `server._call_lock` does.
 """
 
 from __future__ import annotations

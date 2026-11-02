@@ -32,6 +32,9 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 - [ ] Decide how Codex gets the skill. Codex skill delivery has not been checked.
 - [ ] Check `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` (owned by Hermes) for the database path and WAL handling. `fleetcom.db` alone is out of date, because recent data sits in `fleetcom.db-wal`.
 
+- [ ] Editing a reviewed task's `description` or `result_summary` keeps `reviewed=1` on content nobody reviewed, and an edit can erase the `[Accepted by]` record. Decide whether content edits clear `reviewed`.
+- [ ] `due`, `remind_at`, `start`, and `end` are unvalidated strings compared lexically, so non-UTC values surface at the wrong time. Decide whether to validate them.
+
 ## Next steps
 
 ## Open questions
@@ -45,10 +48,11 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 
 Never rewrite a past decision; add a dated entry that supersedes it.
 
-### 2026-11-01 - Writes run inside `with conn:`; a status change away from `completed` clears `reviewed`; `due_now` includes overdue `due`
+### 2026-11-01 - One lock per tool call; writes run inside `with conn:`; a status change away from `completed` clears `reviewed`; `due_now` includes overdue `due`
 Why: an architect review found that a rejected write left its transaction open and blocked other server processes (verified on a file database), that a reopened task kept `reviewed=1`, and that a task with only a passed `due` never surfaced.
-`crud.update` stays a blind field-setter. `tasks.update` adds `reviewed=0` to the same `UPDATE`, so `crud` gains no state machine. `due_now` no longer ports the old `reminders.list_due` predicate.
-Rejected: rollback in `_anticipated`, which misses callers outside the tool layer; documenting the `reviewed` and `due` behavior as limits instead of fixing it.
+A code review then found that the SDK runs sync tools in worker threads on one shared connection, so `with conn:` alone let one call's rollback erase another call's write. `_anticipated` now holds one lock for each tool call.
+SUPERSEDES part of the 2026-09-13 status lifecycle decision: `reviewed` is still never caller-settable, but `tasks.update` now resets it to 0 in the same `UPDATE`. `crud.update` stays a blind field-setter and gains no state machine. `due_now` no longer ports the old `reminders.list_due` predicate.
+Rejected: one connection per call, which is a larger change than a lock for a low-volume server; rollback in `_anticipated`, which misses callers outside the tool layer; documenting the `reviewed` and `due` behavior as limits instead of fixing it.
 
 ### 2026-11-01 - SUPERSEDES the default in the 2026-09-13 deployment entry: default database path is `~/Claude/-hermes/db/fleetcom.db`
 Why: both MCP clients pass `--db` with this path, so the code default pointed at a zero-byte file. A launch without `--db` would have silently used an empty database. `FLEETCOM_DB_PATH` and `--db` are unchanged.

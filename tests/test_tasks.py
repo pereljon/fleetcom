@@ -198,3 +198,30 @@ def test_list_due_now_includes_overdue_deadlines(conn):
     tasks.create(conn, created_by="a", summary="later", due="2099-01-01T00:00:00Z")
 
     assert [t["id"] for t in tasks.list(conn, due_now=True)] == [overdue]
+
+
+def test_list_due_now_orders_by_earliest_passed_time(conn):
+    newer = tasks.create(
+        conn, created_by="a", summary="newer", remind_at="2021-01-01T00:00:00Z"
+    )
+    overdue = tasks.create(
+        conn,
+        created_by="a",
+        summary="overdue with a later reminder",
+        due="2020-01-01T00:00:00Z",
+        remind_at="2099-01-01T00:00:00Z",
+    )
+
+    assert [t["id"] for t in tasks.list(conn, due_now=True)] == [overdue, newer]
+
+
+def test_accept_and_reject_append_to_description(conn):
+    task_id = tasks.create(conn, created_by="a", summary="x", description="original")
+    tasks.update(conn, task_id, status="completed")
+    tasks.reject(conn, task_id, actor="hermes:cos", note="redo")
+    tasks.update(conn, task_id, status="completed")
+    tasks.accept(conn, task_id, actor="hermes:cos")
+
+    assert tasks.get(conn, task_id)["description"] == (
+        "original\n\n[Rejected by hermes:cos]: redo\n\n[Accepted by hermes:cos]"
+    )

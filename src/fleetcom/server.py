@@ -5,12 +5,17 @@ from __future__ import annotations
 import argparse
 import functools
 import sqlite3
+import threading
 from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
 from . import agenda, contacts, db, events, tasks
+
+# The SDK runs sync tools in worker threads, and all of them share one connection.
+# Transactions are per connection, so calls must not interleave on it.
+_call_lock = threading.Lock()
 
 
 def _updated_fields(**fields: Any) -> dict[str, Any]:
@@ -24,10 +29,11 @@ def _anticipated(fn):
 
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
-        try:
-            return fn(*args, **kwargs)
-        except (ValueError, sqlite3.IntegrityError) as exc:
-            raise ToolError(str(exc)) from exc
+        with _call_lock:
+            try:
+                return fn(*args, **kwargs)
+            except (ValueError, sqlite3.IntegrityError) as exc:
+                raise ToolError(str(exc)) from exc
 
     return wrapper
 

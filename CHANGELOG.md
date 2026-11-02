@@ -11,6 +11,8 @@ Nothing in this project has been released yet; the entries below reflect the cur
 - Add `--db` CLI flag (`FLEETCOM_DB_PATH` env var still works; the flag takes precedence).
 - Change the default database path to `~/Claude/-hermes/db/fleetcom.db`, the live database.
 - Fix a rejected write leaving its transaction open, which blocked writes from every other server.
+- Fix concurrent tool calls interleaving on the shared connection, which lost writes already reported as successful.
+- Fix `task_accept` and `task_reject` overwriting a concurrent `description` edit.
 - Fix `reviewed` surviving when a task leaves `completed`.
 - Include overdue `due` dates in `due_now` and `agenda_today`.
 - Pin `mcp` to `>=2.2,<2.3`.

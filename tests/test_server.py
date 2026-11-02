@@ -1,7 +1,9 @@
+import asyncio
+
 import pytest
 from mcp import Client
 
-from fleetcom import db
+from fleetcom import db, tasks
 from fleetcom.server import build_server
 
 
@@ -225,3 +227,36 @@ async def test_contact_create_and_search(server):
         )
         res = await client.call_tool("contact_search", {"query": "acme"})
     assert [c["name"] for c in res.structured_content["contacts"]] == ["Acme Plumbing"]
+
+
+async def test_concurrent_rejected_writes_do_not_lose_reported_writes(tmp_path):
+    conn = db.connect(str(tmp_path / "fleetcom.db"))
+    db.migrate(conn)
+    server = build_server(conn)
+    target = tasks.create(conn, created_by="a", summary="target")
+
+    async with Client(server) as client:
+        calls = []
+        for i in range(150):
+            calls.append(
+                client.call_tool(
+                    "task_create", {"summary": f"keep {i}", "created_by": "a"}
+                )
+            )
+            calls.append(
+                client.call_tool(
+                    "task_update", {"task_id": target, "status": "blocked"}
+                )
+            )
+        results = await asyncio.wait_for(
+            asyncio.gather(*calls, return_exceptions=True), timeout=30
+        )
+
+    reported = [
+        r.structured_content["id"]
+        for r in results
+        if getattr(r, "structured_content", None) and "id" in r.structured_content
+    ]
+    assert len(reported) == 150
+    assert [i for i in reported if tasks.get(conn, i) is None] == []
+    conn.close()
