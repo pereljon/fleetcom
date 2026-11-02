@@ -6,7 +6,7 @@ Guidance for Claude Code when working in this repository. Shared rules live in `
 
 **Fleetcom (`fleetcom-mcp`)** -- Shared office notebook for the fleet. Written in Python on stdlib `sqlite3` and the official `mcp` SDK, it exposes tasks, events, contacts, and a daily agenda over the Model Context Protocol (stdio transport).
 
-Internal infrastructure for the fleet (Hermes and Claude Code); optimize for correctness and simplicity.
+Internal infrastructure for the fleet (Hermes, Claude Code, and Codex); optimize for correctness and simplicity.
 
 ## Design Principles
 
@@ -24,7 +24,7 @@ A shared notebook, not a distributed work queue.
 
 ## Security Context
 
-- **Users:** One person's fleet of Hermes profiles and Claude Code sessions, on one trusted machine. Fleetcom has no network port.
+- **Users:** One person's fleet of Hermes profiles, Claude Code sessions, and Codex sessions, on one trusted machine. Fleetcom has no network port.
 - **Untrusted inputs:** Tool arguments, and text in stored rows. An agent may store text taken from email or the web, and another agent later reads it.
 - **Identity:** Handles such as `actor`, `owner`, and `created_by` are self-reported, so they are not proof of who wrote a row. Accept and reject records sit in `description`, which any `task_update` can overwrite.
 - **Costliest mistakes:** Any client can rewrite or hard-delete any row, with no history. Beyond that, the costliest are letting a caller-supplied name reach an SQL identifier without an allow-list, and treating stored text as instructions.

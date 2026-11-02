@@ -41,7 +41,8 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 
 ## Next steps
 
-- [ ] After `fix-default-db-path` merges, plan moving the database to `~/.fleetcom/` as a separate feature (`dev/features/`). First confirm with Hermes how `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` treats fleetcom, and how `~/Claude` is backed up.
+- [ ] After `fix-default-db-path` merges, plan moving the database to `~/.fleetcom/` as a separate feature (`dev/features/`). First confirm how `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` treats fleetcom, and how `~/Claude` is backed up.
+- [ ] Database move constraints, from hermes-manager on 2026-11-01. Five Hermes configs pass `--db`: `~/.hermes/config.yaml` and the builder, coach, controller, and secretary profiles. The user approves those exact edits. The gateway-ops skill requires a stopped gateway, all paths updated before the move, and one real write at the new path. `~/Claude/-hermes/db/` is current practice for fleet databases, not a stated policy (inferred by hermes-manager). `~/Claude/-hermes/AGENTS.md:55` has the old path, and the gateway-ops skill needs updating after the move.
 
 ## Open questions
 
