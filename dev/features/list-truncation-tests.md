@@ -46,7 +46,14 @@ The first test must fail on the current code before the fix lands.
 - `uv run pytest`: 99 passed. `ruff check` and `ruff format --check`: clean.
 - 38 of the 45 new test cases failed on the old code, including the first test. The other 7 guard against a regression, and passed on the old code.
 - With the sort reduced to newest first alone, 9 test cases failed.
-- The live checks have not run, because the build is not promoted.
+
+Live, 2026-11-02 at 00:42 PST, after promoting `371acda`:
+
+- Through the installed `fleetcom-mcp` over stdio, a new task came first in an unfiltered `task_list`. `truncated` was the first key and was true, with 50 rows. The last row was `completed` with `reviewed=1`, so the cut held only accepted history.
+- `agenda_today` returned `tasks_truncated` and `events_truncated` first.
+- `limit=-1` returned the error `limit must be between 1 and 1000000`.
+- The test task was deleted, and the table holds 50 tasks again.
+- Not checked yet: `agenda_today` through a Hermes client, and one `task_list` from each of Hermes, Claude Code, and Codex. Each needs its servers restarted first.
 
 ## Review findings
 

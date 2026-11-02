@@ -4,7 +4,7 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 
 ## Bugs
 
-- [x] (fixed on branch `list-truncation`, 2026-11-01; `dev/features/list-truncation.md`) Every list path truncates silently at `limit` (default 50), with no signal in the response: `task_list` with any filter, `due_now`, `agenda_today`, `event_list`, and `contact_search`. `crud.list_rows` sorts oldest first, so unfiltered and `owner` lists drop the newest tasks, and the live database holds 50 tasks. A subagent review confirmed this by experiment on 2026-11-01. A second review (Opus, high effort) showed that newest first alone silently hides old live work. Recommended fix: order tasks by active, then unreviewed, then newest, with a `rowid` tiebreak; add a `truncated` flag on every list response; reject `limit < 1`; keep the default at 50.
+- [x] (fixed 2026-11-02, merged as `371acda` and promoted; `dev/features/list-truncation.md`) Every list path truncates silently at `limit` (default 50), with no signal in the response: `task_list` with any filter, `due_now`, `agenda_today`, `event_list`, and `contact_search`. `crud.list_rows` sorts oldest first, so unfiltered and `owner` lists drop the newest tasks, and the live database holds 50 tasks. A subagent review confirmed this by experiment on 2026-11-01. A second review (Opus, high effort) showed that newest first alone silently hides old live work. Recommended fix: order tasks by active, then unreviewed, then newest, with a `rowid` tiebreak; add a `truncated` flag on every list response; reject `limit < 1`; keep the default at 50.
 
 ## Planned
 
@@ -44,7 +44,8 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 
 ## Next steps
 
-- [ ] Promote `list-truncation`, restart the servers straight away, and run the live checks in `dev/features/list-truncation-tests.md`.
+- [x] Promote `list-truncation` and check it through the installed server (done 2026-11-02, `371acda`).
+- [ ] Restart the Hermes gateway and the other Claude Code and Codex sessions, because their servers still run the old code. Then run the client checks in `dev/features/list-truncation-tests.md` (Results, Not checked yet).
 - [ ] After promote, ask hermes-manager to update the CoS job: a true `truncated` on the review queue query means raise `limit`.
 - [x] Next feature: write `dev/features/db-move.md` and its test plan. Include the startup crash on a new database file. Backups are the user's and stay out of the design. (resolved 2026-11-01): both written.
 - [x] Review the `db-move` test plan with the user, then build `db-move` on a branch. (resolved 2026-11-01): approved, built on `db-move`.

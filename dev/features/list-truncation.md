@@ -2,7 +2,7 @@
 
 Owns: the design for fixing silent truncation on list tools. Does NOT hold test cases or review findings (`list-truncation-tests.md`).
 
-Status: built on branch `list-truncation` 2026-11-01, not merged or promoted. Investigated against commit `07dd569` and SQLite 3.53.1.
+Status: shipped 2026-11-02, merged as `371acda` and promoted. Client checks wait on server restarts. Investigated against commit `07dd569` and SQLite 3.53.1.
 
 ## Goal
 
