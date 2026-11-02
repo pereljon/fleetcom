@@ -41,7 +41,11 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 
 ## Next steps
 
-- [ ] After `fix-default-db-path` merges, plan moving the database to `~/.fleetcom/` as a separate feature (`dev/features/`). First confirm how `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` treats fleetcom, and how `~/Claude` is backed up.
+- [ ] Next feature: write `dev/features/db-move.md` and its test plan. Include the startup crash on a new database file. Backups are the user's and stay out of the design.
+- [ ] The user restarts `hermes gateway` and idle Claude Code sessions so servers load the 2026-11-01 lost-write fix. 26 servers predated that promote.
+- [ ] Confirm a Codex fleetcom call in an interactive session. `codex exec` refuses it: "MCP tool call requires approval, but approval policy is never".
+- [ ] Delete `HERMES_TASK.md` and `HERMES_RESULT.md` (approved by the user). The auto mode permission check blocked it.
+- [ ] After `fix-default-db-path` merges, plan moving the database to `~/.fleetcom/` as a separate feature (`dev/features/`). The machine is backed up with Time Machine (from the user, 2026-11-01). `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` is a one-time migration with a hardcoded `db/fleetcom.db` path, so retire it or remove its fleetcom lines with the move.
 - [ ] Database move constraints, from hermes-manager on 2026-11-01. Five Hermes configs pass `--db`: `~/.hermes/config.yaml` and the builder, coach, controller, and secretary profiles. The user approves those exact edits. The gateway-ops skill requires a stopped gateway, all paths updated before the move, and one real write at the new path. `~/Claude/-hermes/db/` is current practice for fleet databases, not a stated policy (inferred by hermes-manager). `~/Claude/-hermes/AGENTS.md:55` has the old path, and the gateway-ops skill needs updating after the move.
 
 ## Open questions
