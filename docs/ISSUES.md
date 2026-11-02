@@ -5,6 +5,7 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 ## Bugs
 
 - [x] (fixed 2026-11-02, merged as `371acda` and promoted; `dev/features/list-truncation.md`) Every list path truncates silently at `limit` (default 50), with no signal in the response: `task_list` with any filter, `due_now`, `agenda_today`, `event_list`, and `contact_search`. `crud.list_rows` sorts oldest first, so unfiltered and `owner` lists drop the newest tasks, and the live database holds 50 tasks. A subagent review confirmed this by experiment on 2026-11-01. A second review (Opus, high effort) showed that newest first alone silently hides old live work. Recommended fix: order tasks by active, then unreviewed, then newest, with a `rowid` tiebreak; add a `truncated` flag on every list response; reject `limit < 1`; keep the default at 50.
+- [ ] `due_now` and `agenda_today` misjudge `due` and `remind_at` values that carry a UTC offset. `tasks.list` compares them as strings with `now_iso()`, so `2026-11-02T09:00:00-08:00` sorts as 09:00 UTC, not 17:00 UTC. A live Hermes Secretary task used `-08:00` (seen 2026-11-02), and a scratch test reproduced the 8-hour early flag. A negative offset is always flagged early by its size, and a positive offset would be flagged late. A read-only count found 29 tasks with a non-UTC `due` or `remind_at`, 23 of them active, and no non-UTC events. `SKILL.md` asks for UTC, but nothing enforces it. Options: normalize to UTC on write, or reject non-UTC values. Both need a design doc, and existing rows need a check.
 
 ## Planned
 
