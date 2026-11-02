@@ -34,8 +34,14 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 
 - [ ] Editing a reviewed task's `description` or `result_summary` keeps `reviewed=1` on content nobody reviewed, and an edit can erase the `[Accepted by]` record. Decide whether content edits clear `reviewed`.
 - [ ] `due`, `remind_at`, `start`, and `end` are unvalidated strings compared lexically, so non-UTC values surface at the wrong time. Decide whether to validate them.
+- [ ] `db.connect`: two servers starting together on a new file can crash at `PRAGMA journal_mode = WAL` with `database is locked` (28 of 80 launches in testing). A file already in WAL mode is unaffected, so this matters for the database move and for a mistyped `--db`.
+- [ ] `database is locked` is not mapped to `ToolError`, so callers see no reason and no retry hint. `busy_timeout = 5000` measured about 13 seconds on SQLite 3.53.1.
+- [ ] `due=""` counts as permanently overdue. `task_update` cannot null a field, so `""` is the obvious way to try clearing one.
+- [ ] `scripts/promote.sh`: the install ignores `uv.lock`, so transitive packages drift from the tested set. A source-only promote may also reuse a stale build (unverified). Consider installing from the lock with `--reinstall`.
 
 ## Next steps
+
+- [ ] After `fix-default-db-path` merges, plan moving the database to `~/.fleetcom/` as a separate feature (`dev/features/`). First confirm with Hermes how `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` treats fleetcom, and how `~/Claude` is backed up.
 
 ## Open questions
 
@@ -47,6 +53,10 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 ## Decisions
 
 Never rewrite a past decision; add a dated entry that supersedes it.
+
+### 2026-11-01 - Move the live database to `~/.fleetcom/` in a separate change (`ok`)
+Why: the database is shared by Claude Code, Hermes, and soon Codex, so it should not live in the Hermes folder or its git working tree. The move depends on the Hermes reconcile script and the backup path, neither of which has been checked.
+Rejected: moving it on `fix-default-db-path`, because that branch already carries the write-loss fixes.
 
 ### 2026-11-01 - One lock per tool call; writes run inside `with conn:`; a status change away from `completed` clears `reviewed`; `due_now` includes overdue `due`
 Why: an architect review found that a rejected write left its transaction open and blocked other server processes (verified on a file database), that a reopened task kept `reviewed=1`, and that a task with only a passed `due` never surfaced.
