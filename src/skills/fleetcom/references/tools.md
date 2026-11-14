@@ -23,7 +23,7 @@ List tools return `truncated` first, and `limit` runs from 1 to 1,000,000 (defau
 ## Events
 
 - `event_create(summary="fleet standup", start="2026-09-15T09:00:00Z", end="2026-09-15T09:30:00Z", created_by="hermes:cos")` — a scheduled meeting.
-- `event_list(start="2026-09-01T00:00:00Z", end="2026-09-30T00:00:00Z")` — everything this month.
+- `event_list(start="2026-09-01T00:00:00Z", end="2026-09-30T23:59:59Z")` — everything this month.
 - `event_update(event_id="...", location="conference room B")` — change a field.
 - `event_delete(event_id="...")` — remove an event.
 
