@@ -2,6 +2,8 @@
 
 One usage example per tool. All 15 tools, grepped from `src/fleetcom/server.py`'s actual `@mcp.tool()` registrations — this list is not maintained by hand elsewhere, so if it drifts from the running server, trust `tools/list`, not this file.
 
+Write tools return `{"ok": bool}`. An id that no row has is an error that names the id, never `ok=false`. `*_update` returns `ok=false` only when no argument changed anything. `*_delete` returns `ok=true` or raises the error. `task_accept` and `task_reject` return `ok=false` only when the task is not completed.
+
 List tools return `truncated` first, and `limit` runs from 1 to 1,000,000 (default 50). A true flag means rows were cut.
 
 ## Tasks

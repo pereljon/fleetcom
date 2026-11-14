@@ -32,6 +32,19 @@ After the promote and client restarts (plan, Task E3):
 1. Call `task_update` with a made-up id through the installed `fleetcom-mcp`. Expect an error that names the id.
 2. Call `task_delete` with a made-up id. Expect the same error, and confirm the task count is unchanged.
 
+## Results
+
+2026-11-14, on branch `unknown-id-errors` at `c8e9d5c`:
+
+- `uv run pytest -q`: 110 passed. `ruff check` and `ruff format --check`: clean.
+- The 11 new tests failed on the old code before the fix. The 8 tool cases failed on behavior. The 3 entity tests failed with `AttributeError`, because `crud.NotFoundError` did not exist yet.
+- Two new tests also pass on the old code by design: the no-field update on an existing id, and reject on a task that is not completed. They guard against the new checks catching more than missing rows.
+
 ## Review findings
 
-None yet.
+A subagent reviewed `c8e9d5c` before the merge on 2026-11-14 (Opus, high effort), limited to findings with a clear execution path. It found none.
+
+- Every caller of the four changed functions is a tool adapter in `server.py` that returns the result directly. None relies on `False` for a missing row (code read).
+- After each of 8 paths, including every raise, `conn.in_transaction` was false and a second connection could write at once (scratch script).
+- An id holding quotes, a newline, and a right-to-left override character appears in the message as one quoted, escaped literal (scratch script).
+- Six mutations were each caught by at least one test: dropping either existence check, raising on any zero-row accept or reject, and returning `False` from update or delete.
