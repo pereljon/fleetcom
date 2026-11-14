@@ -103,7 +103,8 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
         result_summary: str | None = None,
     ) -> dict[str, Any]:
         """Update a task. Only non-null arguments are changed. status='blocked' requires
-        blocked_reason (in this call or already stored on the row)."""
+        blocked_reason (in this call or already stored on the row). ok=false means no
+        argument changed anything. An unknown id is an error that names the id."""
         fields = _updated_fields(
             summary=summary,
             description=description,
@@ -119,22 +120,24 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
     @mcp.tool()
     @_anticipated
     def task_delete(task_id: str) -> dict[str, Any]:
-        """Delete a task."""
+        """Delete a task. An unknown id is an error that names the id."""
         return {"ok": tasks.delete(conn, task_id)}
 
     @mcp.tool()
     @_anticipated
     def task_accept(task_id: str, actor: str) -> dict[str, Any]:
         """CoS accepts a completed task's result (sets reviewed=1, records actor in
-        description). No-op (ok=False) unless the task is currently completed.
-        actor is not an enforced permission -- fleetcom has no agent-identity layer."""
+        description). ok=false means the task is not completed; an unknown id is an
+        error that names the id. actor is not an enforced permission -- fleetcom has
+        no agent-identity layer."""
         return {"ok": tasks.accept(conn, task_id, actor=actor)}
 
     @mcp.tool()
     @_anticipated
     def task_reject(task_id: str, actor: str, note: str) -> dict[str, Any]:
         """CoS bounces a completed task back to in-progress with a note (appended to
-        description) and clears reviewed. No-op (ok=False) unless currently completed."""
+        description) and clears reviewed. ok=false means the task is not completed; an
+        unknown id is an error that names the id."""
         return {"ok": tasks.reject(conn, task_id, actor=actor, note=note)}
 
     # -- events -----------------------------------------------------------
@@ -184,7 +187,8 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
         end: str | None = None,
         location: str | None = None,
     ) -> dict[str, Any]:
-        """Update an event. Only non-null arguments are changed."""
+        """Update an event. Only non-null arguments are changed. ok=false means no
+        argument changed anything. An unknown id is an error that names the id."""
         fields = _updated_fields(
             summary=summary,
             description=description,
@@ -197,7 +201,7 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
     @mcp.tool()
     @_anticipated
     def event_delete(event_id: str) -> dict[str, Any]:
-        """Delete an event."""
+        """Delete an event. An unknown id is an error that names the id."""
         return {"ok": events.delete(conn, event_id)}
 
     # -- contacts -----------------------------------------------------------
@@ -251,7 +255,8 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
         notes: str | None = None,
         tags: str | None = None,
     ) -> dict[str, Any]:
-        """Update a contact. Only non-null arguments are changed."""
+        """Update a contact. Only non-null arguments are changed. ok=false means no
+        argument changed anything. An unknown id is an error that names the id."""
         fields = _updated_fields(
             name=name,
             kind=kind,
@@ -266,7 +271,7 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
     @mcp.tool()
     @_anticipated
     def contact_delete(contact_id: str) -> dict[str, Any]:
-        """Delete a contact."""
+        """Delete a contact. An unknown id is an error that names the id."""
         return {"ok": contacts.delete(conn, contact_id)}
 
     # -- agenda ---------------------------------------------------------------

@@ -61,11 +61,11 @@ Do not edit these files in any task:
 
 Answer these before the branch that needs them starts. Each has a recommended default.
 
-- **Q1 (A):** `task_accept` and `task_reject` also return `{"ok": false}` for an unknown id. Should they raise the same not-found error? Recommended: yes. `ok: false` then means only "the task is not completed".
-- **Q2 (C):** Should `""` clear `due`, `remind_at`, or `end`? Recommended: yes. Today `""` is stored and counts as permanently overdue, and no tool can clear a field. The alternative is to reject `""` as an unparseable time.
-- **Q3 (C):** Normalizing requires parsing. Should an unparseable time (such as `"next tuesday"`) be rejected with an error? Recommended: yes. Today such a value is stored and never comes due.
-- **Q4 (B):** Should only newly created databases get folder mode 700 and file mode 600? Recommended: yes. The live database already has those modes from the db-move runbook. Changing modes on an existing file at startup is out of scope.
-- **Q5 (item 8):** Should editing a reviewed task's content clear `reviewed` (`docs/ISSUES.md`, Planned)? Recommended: defer. No branch in this plan changes it.
+- **Q1 (A):** `task_accept` and `task_reject` also return `{"ok": false}` for an unknown id. Should they raise the same not-found error? Recommended: yes. `ok: false` then means only "the task is not completed". (Answered 2026-11-14: the user approved the recommendation.)
+- **Q2 (C):** Should `""` clear `due`, `remind_at`, or `end`? Recommended: yes. Today `""` is stored and counts as permanently overdue, and no tool can clear a field. The alternative is to reject `""` as an unparseable time. (Answered 2026-11-14: the user approved the recommendation.)
+- **Q3 (C):** Normalizing requires parsing. Should an unparseable time (such as `"next tuesday"`) be rejected with an error? Recommended: yes. Today such a value is stored and never comes due. (Answered 2026-11-14: the user approved the recommendation.)
+- **Q4 (B):** Should only newly created databases get folder mode 700 and file mode 600? Recommended: yes. The live database already has those modes from the db-move runbook. Changing modes on an existing file at startup is out of scope. (Answered 2026-11-14: the user approved the recommendation.)
+- **Q5 (item 8):** Should editing a reviewed task's content clear `reviewed` (`docs/ISSUES.md`, Planned)? Recommended: defer. No branch in this plan changes it. (Answered 2026-11-14: the user approved the recommendation.)
 - **Q6 (E):** One promote after all four branches, or restart the clients now to finish the list-truncation checks? Recommended: one promote at the end. (Answered 2026-11-14: the user approved one promote at the end.)
 - **Q7 (before Branch A):** The repo is public. Commit this plan file, or gitignore `docs/superpowers/plans/`? Recommended: commit it. It holds no personal data, and the feature docs are already committed. Settle this first: while the file is untracked, the new `promote.sh` guard refuses to run (Task D3 Step 4, Task E2). (Answered 2026-11-14: the user approved committing it.)
 
@@ -668,7 +668,10 @@ def test_to_utc_rejects_a_value_it_cannot_convert(value):
 
 
 def test_normalize_times_touches_only_named_fields():
-    fields = {"due": "2026-11-02T09:00:00-08:00", "summary": "2026-11-02T09:00:00-08:00"}
+    fields = {
+        "due": "2026-11-02T09:00:00-08:00",
+        "summary": "2026-11-02T09:00:00-08:00",
+    }
     assert util.normalize_times(fields, ("due", "remind_at")) == {
         "due": "2026-11-02T17:00:00Z",
         "summary": "2026-11-02T09:00:00-08:00",
@@ -765,7 +768,9 @@ def test_due_now_does_not_flag_an_offset_due_early(conn):
 
 
 def test_update_with_empty_string_clears_due(conn):
-    task_id = tasks.create(conn, created_by="a", summary="x", due="2000-01-01T00:00:00Z")
+    task_id = tasks.create(
+        conn, created_by="a", summary="x", due="2000-01-01T00:00:00Z"
+    )
     tasks.update(conn, task_id, due="")
     assert tasks.get(conn, task_id)["due"] is None
     assert task_id not in [t["id"] for t in tasks.list(conn, due_now=True)]
@@ -788,11 +793,16 @@ def test_event_times_are_stored_in_utc(conn):
         end="2026-11-02T10:00:00-08:00",
     )
     row = events.get(conn, event_id)
-    assert (row["start"], row["end"]) == ("2026-11-02T17:00:00Z", "2026-11-02T18:00:00Z")
+    assert (row["start"], row["end"]) == (
+        "2026-11-02T17:00:00Z",
+        "2026-11-02T18:00:00Z",
+    )
 
 
 def test_list_in_range_normalizes_its_bounds(conn):
-    event_id = events.create(conn, created_by="a", summary="x", start="2026-11-02T17:30:00Z")
+    event_id = events.create(
+        conn, created_by="a", summary="x", start="2026-11-02T17:30:00Z"
+    )
     rows = events.list_in_range(
         conn, start="2026-11-02T09:00:00-08:00", end="2026-11-02T10:00:00-08:00"
     )
@@ -864,7 +874,9 @@ def test_normalize_stored_times_fixes_offsets_and_blanks(conn):
     assert db.normalize_stored_times(conn) == (3, 1)
 
     def value(table, column, id_):
-        return conn.execute(f"SELECT {column} FROM {table} WHERE id = ?", (id_,)).fetchone()[0]
+        return conn.execute(
+            f"SELECT {column} FROM {table} WHERE id = ?", (id_,)
+        ).fetchone()[0]
 
     assert value("tasks", "due", "t1") == "2026-11-02T17:00:00Z"
     assert value("tasks", "remind_at", "t2") is None
@@ -907,7 +919,9 @@ Under Q2 rejected, `""` is unparseable: change the first test's expectation to `
 ```python
 # Literals, not caller input: these names are interpolated into SQL.
 _TIME_COLUMNS = {"tasks": ("due", "remind_at"), "events": ("start", "end")}
-_UTC_GLOB = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z"
+_UTC_GLOB = (
+    "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z"
+)
 
 
 def normalize_stored_times(conn: sqlite3.Connection) -> tuple[int, int]:
@@ -943,7 +957,11 @@ def normalize_stored_times(conn: sqlite3.Connection) -> tuple[int, int]:
                 try:
                     cur = conn.execute(
                         f"UPDATE {table} SET {sets} WHERE id = ? AND {guards}",
-                        [*(new[c] for c in columns), row["id"], *(row[c] for c in columns)],
+                        [
+                            *(new[c] for c in columns),
+                            row["id"],
+                            *(row[c] for c in columns),
+                        ],
                     )
                 except sqlite3.IntegrityError:
                     left += 1

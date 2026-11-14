@@ -18,6 +18,7 @@ Nothing in this project has been released yet; the entries below reflect the cur
 - Fix concurrent tool calls interleaving on the shared connection, which lost writes already reported as successful.
 - Fix `task_accept` and `task_reject` overwriting a concurrent `description` edit.
 - Fix `reviewed` surviving when a task leaves `completed`.
+- Fix update, delete, accept, and reject tools returning `ok=false` for an unknown id: they now return an error that names the id (`crud.NotFoundError`), so `ok=false` means only that nothing changed or the task is not completed.
 - Include overdue `due` dates in `due_now` and `agenda_today`.
 - Pin `mcp` to `>=2.2,<2.3`.
 - Fix `scripts/promote.sh`: pin Python 3.11, and stop `ln` writing a link inside the deployed skill.

@@ -171,6 +171,26 @@ async def test_task_accept_and_reject(server):
         assert "cos-agent" in tasks_[0]["description"]
 
 
+@pytest.mark.parametrize(
+    "tool, args",
+    [
+        ("task_update", {"task_id": "missing-1", "status": "open"}),
+        ("task_delete", {"task_id": "missing-1"}),
+        ("task_accept", {"task_id": "missing-1", "actor": "cos"}),
+        ("task_reject", {"task_id": "missing-1", "actor": "cos", "note": "n"}),
+        ("event_update", {"event_id": "missing-1", "summary": "x"}),
+        ("event_delete", {"event_id": "missing-1"}),
+        ("contact_update", {"contact_id": "missing-1", "name": "x"}),
+        ("contact_delete", {"contact_id": "missing-1"}),
+    ],
+)
+async def test_unknown_id_is_an_error_naming_the_id(server, tool, args):
+    async with Client(server) as client:
+        res = await asyncio.wait_for(client.call_tool(tool, args), timeout=10)
+    assert res.is_error is True
+    assert "missing-1" in res.content[0].text
+
+
 async def test_task_update_blocked_without_reason_returns_meaningful_error(server):
     async with Client(server) as client:
         res = await client.call_tool("task_create", {"summary": "x", "created_by": "a"})
