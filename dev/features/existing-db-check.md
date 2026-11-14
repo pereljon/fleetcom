@@ -2,7 +2,7 @@
 
 Owns: the design for refusing an existing file that is not a fleetcom database unless `--create-db` is passed. Does NOT hold test cases or review findings (`existing-db-check-tests.md`).
 
-Status: designing on branch `existing-db-check`. Investigated against `main` at `104283d`, Python 3.11 with its bundled SQLite. Source: finding S1 in `docs/reviews/2026-11-14-fable-review.md`.
+Status: built and reviewed on branch `existing-db-check`; not yet merged. Investigated against `main` at `104283d`, Python 3.11 with its bundled SQLite. Source: finding S1 in `docs/reviews/2026-11-14-fable-review.md`.
 
 ## Goal
 
@@ -32,6 +32,7 @@ The check reads before the WAL switch, so a refused file is never changed. The r
 - An existing empty or non-fleetcom file at the database path becomes a startup error unless `--create-db` is passed.
 - A live fleetcom database is unaffected. The schema does not change.
 - A server started without `--create-db` while another server is still creating the file exits with the same error, until the creating server commits `migrate`. `--create-db` is a one-time setup run, so this overlap is narrow (design review, 2026-11-14).
+- A first `--create-db` run killed between the schema DDL and the `schema_version` insert leaves a file that a normal start refuses. One more `--create-db` run repairs it (pre-merge review, 2026-11-14).
 - `--create-db` on another application's SQLite file still adds the fleetcom tables to it. The flag means "set up this file", and the user passes it on purpose.
 
 ## Decisions

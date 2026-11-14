@@ -249,3 +249,13 @@ def test_connect_opens_while_another_server_holds_the_write_lock(tmp_path):
     finally:
         holder.rollback()
         holder.close()
+
+
+def test_connect_opens_a_database_with_an_older_schema_version(tmp_path):
+    path = str(tmp_path / "fleetcom.db")
+    db.migrate(db.connect(path, create=True))
+    old = sqlite3.connect(path)
+    old.execute("UPDATE schema_version SET version = 0")
+    old.commit()
+    old.close()
+    db.connect(path).close()

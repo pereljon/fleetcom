@@ -306,7 +306,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--create-db",
         action="store_true",
-        help="Create the database if it does not exist",
+        help="Create the database, or set up an existing empty file",
     )
     args = parser.parse_args(argv)
     args.db = args.db or db.default_db_path()
