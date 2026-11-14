@@ -56,7 +56,7 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 - [ ] Confirm a fleetcom call from Codex at the new path. No Codex session ran at cutover.
 - [x] The user restarts `hermes gateway` and idle Claude Code sessions so servers load the 2026-11-01 lost-write fix. 26 servers predated that promote. (resolved 2026-11-01): every server was restarted at the cutover.
 - [ ] Confirm a Codex fleetcom call in an interactive session. `codex exec` refuses it: "MCP tool call requires approval, but approval policy is never".
-- [ ] Delete `HERMES_TASK.md` and `HERMES_RESULT.md` (approved by the user). The auto mode permission check blocked it.
+- [x] Delete `HERMES_TASK.md` and `HERMES_RESULT.md` (approved by the user). (resolved 2026-11-14): deleted, with the merged local branches `db-move`, `fix-default-db-path`, and `list-truncation`.
 - [x] (resolved 2026-11-01: planned in `dev/features/db-move.md`) After `fix-default-db-path` merges, plan moving the database to `~/.fleetcom/` as a separate feature (`dev/features/`). The machine is backed up with Time Machine (from the user, 2026-11-01). `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` is a one-time migration with a hardcoded `db/fleetcom.db` path, so retire it or remove its fleetcom lines with the move.
 - [x] (resolved 2026-11-01: applied at cutover) Database move constraints, from hermes-manager on 2026-11-01. Five Hermes configs pass `--db`: `~/.hermes/config.yaml` and the builder, coach, controller, and secretary profiles. The user approves those exact edits. The gateway-ops skill requires a stopped gateway, all paths updated before the move, and one real write at the new path. `~/Claude/-hermes/db/` is current practice for fleet databases, not a stated policy (inferred by hermes-manager). `~/Claude/-hermes/AGENTS.md:55` has the old path, and the gateway-ops skill needs updating after the move.
 
@@ -70,6 +70,12 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 ## Decisions
 
 Never rewrite a past decision; add a dated entry that supersedes it.
+
+### 2026-11-14 - Unknown id, offset timestamps, and missing database: chosen directions (`ok`)
+Why: a status review ranked these the top three open defects (the offset and unknown-id items under Bugs, and the wrong `--db` item under Planned). Each still needs a design doc and test plan before code.
+- An update or delete with an unknown id raises an error that names the id. Rejected: a structured `{"ok": false, "reason": "not_found"}`, which callers can still read as a soft failure.
+- `due`, `remind_at`, `start`, and `end` values with a UTC offset are normalized to UTC on write, and the same feature fixes the 29 existing non-UTC rows. Rejected: rejecting non-UTC values, which breaks callers that send them today.
+- A missing database file is an error by default, and a new `--create-db` flag allows creating one. Rejected: keeping silent auto-create.
 
 ### 2026-11-01 - SUPERSEDES the default in the entry below: default database path is `~/.fleetcom/fleetcom.db`
 Why: the live database moves there, and a default naming the old path would recreate an empty file in the Hermes folder.
