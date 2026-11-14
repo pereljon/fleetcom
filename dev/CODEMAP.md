@@ -5,7 +5,7 @@ Maintain: add a row when code lands; keep each purpose to one line.
 
 | function/module | one-line purpose |
 |-----------------|------------------|
-| `src/fleetcom/db.py` | schema DDL for tasks/events/contacts; `connect(path, *, create=False)` (expands `~`, refuses a missing file unless `create`, opens with `mode=rw`), `_enable_wal` (bounded retry of the WAL switch), `_stored_version` (reads `schema_version`, or `None` on a new file), `migrate` (skips its write when the version is current), `default_db_path` |
+| `src/fleetcom/db.py` | schema DDL for tasks/events/contacts; `connect(path, *, create=False)` (expands `~`, refuses a missing file, and an existing file with no `schema_version`, unless `create`; opens with `mode=rw`), `_enable_wal` (bounded retry of the WAL switch), `_stored_version` (reads `schema_version`, or `None` on a new file), `migrate` (skips its write when the version is current), `default_db_path` |
 | `src/fleetcom/util.py` | `new_id` (uuid4), `now_iso` (UTC RFC3339-ish timestamp), `capped` (fetches `limit + 1` rows to report truncation and validates `limit`) |
 | `src/fleetcom/crud.py` | generic, injection-safe CRUD engine (`create`/`get`/`update`/`delete`) shared by all entities; `update` and `delete` raise `NotFoundError` (a `ValueError`) when no row has the id; field names are validated against a fixed allow-list before being interpolated into SQL identifier positions |
 | `src/fleetcom/tasks.py` | task CRUD (absorbs former reminders via `remind_at`); `list(due_now=True)` bespoke query; `accept`/`reject` bespoke status-gated transitions |

@@ -107,8 +107,15 @@ def connect(path: str, *, create: bool = False) -> sqlite3.Connection:
     uri = f"{file.resolve().as_uri()}?mode=rw"
     conn = sqlite3.connect(uri, uri=True, check_same_thread=False)
     conn.row_factory = sqlite3.Row
-    _enable_wal(conn)
     conn.execute("PRAGMA busy_timeout = 5000")
+    # Check before the WAL switch, which would itself change a refused file.
+    if not create and _stored_version(conn) is None:
+        conn.close()
+        raise sqlite3.DatabaseError(
+            "not a fleetcom database (no schema_version); check the path, "
+            "and pass --create-db only to set up a new database"
+        )
+    _enable_wal(conn)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 

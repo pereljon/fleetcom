@@ -202,3 +202,60 @@ def test_migrate_does_not_write_when_the_schema_is_current(tmp_path):
         holder.rollback()
         holder.close()
         conn.close()
+
+
+def test_connect_refuses_an_empty_file(tmp_path):
+    path = tmp_path / "fleetcom.db"
+    path.touch()
+    with pytest.raises(sqlite3.DatabaseError, match="--create-db"):
+        db.connect(str(path))
+    assert path.stat().st_size == 0
+
+
+def test_connect_refuses_another_applications_database(tmp_path):
+    path = tmp_path / "other.db"
+    other = sqlite3.connect(path)
+    other.execute("CREATE TABLE notes (x)")
+    other.commit()
+    other.close()
+    with pytest.raises(sqlite3.DatabaseError, match="not a fleetcom database"):
+        db.connect(str(path))
+    check = sqlite3.connect(path)
+    assert check.execute("PRAGMA journal_mode").fetchone()[0] == "delete"
+    tables = check.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+    assert [row[0] for row in tables] == ["notes"]
+    check.close()
+
+
+def test_connect_sets_up_an_empty_file_when_asked(tmp_path):
+    path = tmp_path / "fleetcom.db"
+    path.touch()
+    conn = db.connect(str(path), create=True)
+    db.migrate(conn)
+    assert conn.execute("SELECT version FROM schema_version").fetchone()[0] == 1
+    conn.close()
+
+
+def test_connect_opens_while_another_server_holds_the_write_lock(tmp_path):
+    path = str(tmp_path / "fleetcom.db")
+    db.migrate(db.connect(path, create=True))
+    holder = sqlite3.connect(path)
+    holder.execute("BEGIN IMMEDIATE")
+    try:
+        started = time.monotonic()
+        conn = db.connect(path)
+        assert time.monotonic() - started < 1
+        conn.close()
+    finally:
+        holder.rollback()
+        holder.close()
+
+
+def test_connect_opens_a_database_with_an_older_schema_version(tmp_path):
+    path = str(tmp_path / "fleetcom.db")
+    db.migrate(db.connect(path, create=True))
+    old = sqlite3.connect(path)
+    old.execute("UPDATE schema_version SET version = 0")
+    old.commit()
+    old.close()
+    db.connect(path).close()
