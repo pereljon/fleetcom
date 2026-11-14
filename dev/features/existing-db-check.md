@@ -2,7 +2,7 @@
 
 Owns: the design for refusing an existing file that is not a fleetcom database unless `--create-db` is passed. Does NOT hold test cases or review findings (`existing-db-check-tests.md`).
 
-Status: built and reviewed on branch `existing-db-check`; not yet merged. Investigated against `main` at `104283d`, Python 3.11 with its bundled SQLite. Source: finding S1 in `docs/reviews/2026-11-14-fable-review.md`.
+Status: merged to `main` as `5855cef` on 2026-11-14; not yet promoted. Investigated against `main` at `104283d`, Python 3.11 with its bundled SQLite. Source: finding S1 in `docs/reviews/2026-11-14-fable-review.md`.
 
 ## Goal
 
