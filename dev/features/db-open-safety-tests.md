@@ -20,13 +20,14 @@ On `main` at `a177129`, 2026-11-14: `uv run pytest -q` gave 110 passed, and `ruf
 | Flag default | `_parse_args([])` and `_parse_args(["--create-db"])` | `create_db` is false, then true |
 | Startup, missing file | `server.main` with `--db` naming a missing file | `SystemExit` whose message names `--create-db`; no file created |
 | Startup, folder | `server.main` with `--db` naming a folder | `SystemExit` whose message says it cannot open the database |
+| Startup, not a database | `server.main` with `--db` naming a file that is not SQLite (added for review finding R1) | `SystemExit` whose message says it cannot open the database |
 | Lock in a tool call | Another connection holds `BEGIN IMMEDIATE`; call `task_create` | `is_error` is true; the text contains `locked` and `retry` |
 | Lock at startup | Another connection holds `BEGIN IMMEDIATE`; `migrate` on a current database | Returns without error |
 | Concurrent creation | Six processes open one new file with `create=True` at once, 20 rounds | All succeed, and the file is in WAL mode (existing test, now passing `create=True`) |
 
 The new tests must fail on the current code before the fix lands.
 
-Every existing `db.connect` on a new file passes `create=True`: `tests/conftest.py:8`, `tests/test_server.py:12` and `:253`, `tests/test_db.py:101`, `:114`, `:123`, and `:129`, and `tests/test_tasks.py:167`. `tests/test_tasks.py:169` opens a file that exists by then, so it stays as is.
+Every existing `db.connect` on a new file passes `create=True`, including the shared fixture in `tests/conftest.py` and `_open_at_barrier` in `tests/test_db.py`. The second open in `test_rejected_write_releases_the_write_lock` (`tests/test_tasks.py`) reaches a file that exists by then, so it does not pass the flag.
 
 ## Live checks
 
