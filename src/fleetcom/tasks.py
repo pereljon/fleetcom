@@ -125,6 +125,8 @@ def accept(conn, task_id: str, actor: str) -> bool:
             "WHERE id = ? AND status = 'completed'",
             (note, note, util.now_iso(), task_id),
         )
+    if cur.rowcount == 0 and get(conn, task_id) is None:
+        raise crud._not_found(TABLE, task_id)
     return cur.rowcount > 0
 
 
@@ -142,4 +144,6 @@ def reject(conn, task_id: str, actor: str, note: str) -> bool:
             "updated_at = ? WHERE id = ? AND status = 'completed'",
             (annotation, annotation, util.now_iso(), task_id),
         )
+    if cur.rowcount == 0 and get(conn, task_id) is None:
+        raise crud._not_found(TABLE, task_id)
     return cur.rowcount > 0

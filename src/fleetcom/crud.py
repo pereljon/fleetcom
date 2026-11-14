@@ -17,6 +17,14 @@ import sqlite3
 from . import util
 
 
+class NotFoundError(ValueError):
+    """An update or delete named an id that no row has."""
+
+
+def _not_found(table: str, id_: str) -> NotFoundError:
+    return NotFoundError(f"{table}: no row with id {id_!r}")
+
+
 def create(
     conn: sqlite3.Connection,
     table: str,
@@ -53,16 +61,22 @@ def update(
     if unknown:
         raise ValueError(f"unknown field(s) for {table}: {sorted(unknown)}")
     if not fields:
+        if get(conn, table, id_) is None:
+            raise _not_found(table, id_)
         return False
     fields["updated_at"] = util.now_iso()
     set_clause = ", ".join(f"{key} = ?" for key in fields)
     args = [*fields.values(), id_]
     with conn:
         cur = conn.execute(f"UPDATE {table} SET {set_clause} WHERE id = ?", args)
-    return cur.rowcount > 0
+    if cur.rowcount == 0:
+        raise _not_found(table, id_)
+    return True
 
 
 def delete(conn: sqlite3.Connection, table: str, id_: str) -> bool:
     with conn:
         cur = conn.execute(f"DELETE FROM {table} WHERE id = ?", (id_,))
-    return cur.rowcount > 0
+    if cur.rowcount == 0:
+        raise _not_found(table, id_)
+    return True

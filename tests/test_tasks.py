@@ -2,7 +2,7 @@ import sqlite3
 
 import pytest
 
-from fleetcom import db, tasks
+from fleetcom import crud, db, tasks
 
 
 def test_create_and_get(conn):
@@ -44,15 +44,27 @@ def test_update_unknown_field_rejected(conn):
         tasks.update(conn, task_id, created_by="agent-evil")
 
 
-def test_update_nonexistent_id_returns_false(conn):
-    assert tasks.update(conn, "no-such-id", status="completed") is False
+def test_update_nonexistent_id_raises_not_found(conn):
+    with pytest.raises(crud.NotFoundError, match="no-such-id"):
+        tasks.update(conn, "no-such-id", status="completed")
+
+
+def test_update_with_no_fields_on_unknown_id_raises_not_found(conn):
+    with pytest.raises(crud.NotFoundError, match="no-such-id"):
+        tasks.update(conn, "no-such-id")
+
+
+def test_update_with_no_fields_on_existing_id_returns_false(conn):
+    task_id = tasks.create(conn, created_by="agent-1", summary="a")
+    assert tasks.update(conn, task_id) is False
 
 
 def test_delete_removes_row(conn):
     task_id = tasks.create(conn, created_by="agent-1", summary="a")
     assert tasks.delete(conn, task_id) is True
     assert tasks.get(conn, task_id) is None
-    assert tasks.delete(conn, task_id) is False
+    with pytest.raises(crud.NotFoundError, match=task_id):
+        tasks.delete(conn, task_id)
 
 
 def test_create_with_remind_at_and_due(conn):
@@ -113,6 +125,12 @@ def test_accept_sets_reviewed_only_when_completed(conn):
     tasks.update(conn, task_id, status="completed", result_summary="done")
     assert tasks.accept(conn, task_id, actor="cos") is True
     assert tasks.get(conn, task_id)["reviewed"] == 1
+
+
+def test_reject_returns_false_when_not_completed(conn):
+    task_id = tasks.create(conn, created_by="a", summary="x")
+    assert tasks.reject(conn, task_id, actor="cos", note="n") is False
+    assert tasks.get(conn, task_id)["status"] == "open"
 
 
 def test_accept_records_actor(conn):
