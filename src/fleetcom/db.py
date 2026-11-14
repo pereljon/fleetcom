@@ -90,12 +90,22 @@ def _enable_wal(conn: sqlite3.Connection) -> None:
             time.sleep(WAL_RETRY_DELAY_SECONDS)
 
 
-def connect(path: str) -> sqlite3.Connection:
-    """Open (creating if needed) the SQLite DB at path with the required PRAGMAs."""
-    parent = Path(path).parent
-    if str(parent):
-        parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path, check_same_thread=False)
+def connect(path: str, *, create: bool = False) -> sqlite3.Connection:
+    """Open the SQLite DB at path with the required PRAGMAs.
+
+    Only create=True makes a new file, so a mistyped path fails instead of
+    starting an empty database.
+    """
+    file = Path(path).expanduser()
+    if create:
+        file.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        file.touch(mode=0o600, exist_ok=True)
+    elif not file.exists():
+        raise FileNotFoundError(
+            f"database not found: {file} (pass --create-db to create it)"
+        )
+    uri = f"{file.resolve().as_uri()}?mode=rw"
+    conn = sqlite3.connect(uri, uri=True, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     _enable_wal(conn)
     conn.execute("PRAGMA busy_timeout = 5000")
@@ -103,8 +113,24 @@ def connect(path: str) -> sqlite3.Connection:
     return conn
 
 
+def _stored_version(conn: sqlite3.Connection) -> int | None:
+    try:
+        row = conn.execute("SELECT version FROM schema_version WHERE id = 1").fetchone()
+    except sqlite3.OperationalError as error:
+        if "no such table" not in str(error):
+            raise
+        return None
+    return row[0] if row else None
+
+
 def migrate(conn: sqlite3.Connection) -> None:
-    """Create all tables (idempotent) and record the schema version."""
+    """Create all tables and record the schema version, unless already current.
+
+    Writing on every startup would crash startup whenever another server holds
+    the write lock past the busy timeout.
+    """
+    if _stored_version(conn) == SCHEMA_VERSION:
+        return
     conn.executescript(SCHEMA_DDL)
     conn.execute(
         "INSERT INTO schema_version (id, version) VALUES (1, ?) "
