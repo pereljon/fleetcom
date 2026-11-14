@@ -35,3 +35,15 @@ def test_main_exits_with_a_message_for_a_folder_path(monkeypatch, tmp_path):
     with pytest.raises(SystemExit) as exit_info:
         server.main()
     assert "cannot open database" in str(exit_info.value.code)
+
+
+def test_main_exits_with_a_message_for_a_file_that_is_not_a_database(
+    monkeypatch, tmp_path
+):
+    path = tmp_path / "notes.txt"
+    path.write_text("not a database")
+    monkeypatch.setattr("sys.argv", ["fleetcom-mcp", "--db", str(path)])
+    with pytest.raises(SystemExit) as exit_info:
+        server.main()
+    assert "cannot open database" in str(exit_info.value.code)
+    assert path.read_text() == "not a database"

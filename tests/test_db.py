@@ -182,6 +182,7 @@ def test_connect_opens_an_existing_file_without_create(tmp_path):
 
 def test_connect_expands_home(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.chdir(tmp_path)
     conn = db.connect("~/fleetcom.db", create=True)
     conn.close()
     assert (tmp_path / "fleetcom.db").exists()

@@ -319,7 +319,7 @@ def main() -> None:
         conn = db.connect(args.db, create=args.create_db)
     except FileNotFoundError as error:
         sys.exit(f"fleetcom-mcp: {error}")
-    except sqlite3.OperationalError as error:
+    except (OSError, sqlite3.DatabaseError) as error:
         sys.exit(f"fleetcom-mcp: cannot open database {args.db}: {error}")
     db.migrate(conn)
     server = build_server(conn)
