@@ -78,9 +78,14 @@ The database path can be set either way: `--db <path>` (shown above) or the `FLE
 
 #### Create the database
 
-Fleetcom does not create a missing database. If the file does not exist, the server prints `database not found` to stderr and exits with status 1, so a mistyped path fails at startup instead of starting an empty database.
+Fleetcom opens only an existing fleetcom database unless you pass `--create-db`. A mistyped path fails at startup instead of starting an empty database, in two cases:
 
-To set up a new database, start the server once with `--create-db` and its input closed, so it creates the database and exits:
+- The file does not exist. The server prints `database not found` to stderr and exits with status 1.
+- The file exists but has no `schema_version` table, such as an empty file or another application's SQLite file. The server prints `fleetcom-mcp: cannot open database <path>: not a fleetcom database (no schema_version); check the path, and pass --create-db only to set up a new database`, exits with status 1, and leaves the file unchanged.
+
+A fleetcom database with an older schema version still opens.
+
+To set up a new database, or to use an existing empty file, start the server once with `--create-db` and its input closed, so it creates the database and exits:
 
 ```bash
 fleetcom-mcp --db ~/.fleetcom/fleetcom.db --create-db < /dev/null

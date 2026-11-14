@@ -43,7 +43,7 @@ Rule of thumb: if the work should be *executed by a spawned Hermes profile worke
 ## Wiring notes
 
 - The database lives at `~/.fleetcom/fleetcom.db` by default; override with `FLEETCOM_DB_PATH` (env var) or `--db <path>` (CLI flag, takes precedence over the env var). Any `fleetcom.db` under `~/Claude/-hermes/` is not the live database.
-- A missing database file is a startup error: the server exits with `database not found`. Do not add `--create-db` to fix it. Check the path first. Pass `--create-db` only when you set up a new database on purpose.
+- A missing database file is a startup error: the server exits with `database not found`. An existing file that is not a fleetcom database (an empty file, or another application's SQLite file) is also a startup error: the server exits with `not a fleetcom database (no schema_version)` and leaves the file unchanged. Do not add `--create-db` to fix either one. Check the path first. Pass `--create-db` only when you set up a new database on purpose.
 - `~` in `--db` and `FLEETCOM_DB_PATH` means the home folder.
 - A `database is locked` tool error means another fleetcom server held the write lock. Retry the call.
 - Run the server via the installed `fleetcom-mcp` launcher (from `uv tool install`), never a bare `python3 -m fleetcom` or similar. The `mcp` package itself needs Python >=3.10 and this project targets >=3.11; macOS ships `/usr/bin/python3` at 3.9, which can't import `mcp` at all, and an MCP client config may not reliably fall back to a newer interpreter on your `PATH`. The installed launcher's shebang is pinned to the correct interpreter regardless of what `python3` resolves to in whatever environment the MCP client runs under.

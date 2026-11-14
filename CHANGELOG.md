@@ -10,6 +10,7 @@ Nothing in this project has been released yet; the entries below reflect the cur
 - Add `fleetcom-mcp`: stdio MCP server (official `mcp` SDK) exposing 15 tools — plain create/list/update/delete over tasks/events/contacts, `task_accept`/`task_reject` for the review gate, and `agenda_today` aggregating tasks due now with today's events.
 - Add `--db` CLI flag (`FLEETCOM_DB_PATH` env var still works; the flag takes precedence).
 - Change a missing database from a silent new empty database to a startup error (exit status 1). Add `--create-db` to create one on purpose.
+- Refuse an existing file that is not a fleetcom database (an empty file, or another application's SQLite file) without `--create-db`, and leave it unchanged. `--create-db` sets up an existing empty file.
 - Expand `~` in `--db` and `FLEETCOM_DB_PATH`. It was taken literally before.
 - Create a new database file with mode 600 in a mode 700 folder (with `--create-db`).
 - Return `database is locked` from a tool call as a tool error with a retry hint.
