@@ -46,6 +46,9 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 
 ## Next steps
 
+- [/] Work through `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, one branch at a time; its checkboxes track progress. As of 2026-11-14, Branch A is merged, and Branch B (`db-open-safety`) is finished and reviewed but waits for the user's approval to merge. Next: Branch C (`utc-timestamps`), whose live-database count needs the user's go-ahead.
+- [ ] Before the promote (plan, Task E1 Step 3), confirm that no client config passes `--db` with a `~` path. Branch B makes `~` mean the home folder, so such a config would switch from a stray empty database to the live one.
+- [/] A Fable subagent review of the specs and feature docs started on 2026-11-14 and writes `docs/reviews/2026-11-14-fable-review.md`. If that file does not exist, the run did not finish: start it again. Then act on its findings with the user.
 - [x] Promote `list-truncation` and check it through the installed server (done 2026-11-02, `371acda`).
 - [ ] Restart the Hermes gateway and the other Claude Code and Codex sessions, because their servers still run the old code. Then run the client checks in `dev/features/list-truncation-tests.md` (Results, Not checked yet).
 - [ ] After promote, ask hermes-manager to update the CoS job: a true `truncated` on the review queue query means raise `limit`.
