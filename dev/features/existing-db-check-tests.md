@@ -27,7 +27,11 @@ After the promote and client restarts (plan, Task E3): run the installed `fleetc
 
 ## Results
 
-Not run yet.
+2026-11-14, on branch `existing-db-check`:
+
+- On the old code, the zero-byte, foreign-file, and startup tests failed, and the create and write-lock tests passed.
+- With the fix, `uv run pytest -q` gave 125 passed. `ruff check` and `ruff format --check` were clean.
+- `uv run fleetcom-mcp --db <scratch>/empty.db < /dev/null` on a zero-byte file exited 1 with the `not a fleetcom database` message, and the file stayed at 0 bytes.
 
 ## Review findings
 

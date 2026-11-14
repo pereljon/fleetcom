@@ -47,3 +47,15 @@ def test_main_exits_with_a_message_for_a_file_that_is_not_a_database(
         server.main()
     assert "cannot open database" in str(exit_info.value.code)
     assert path.read_text() == "not a database"
+
+
+def test_main_exits_with_a_message_for_an_empty_file(monkeypatch, tmp_path):
+    path = tmp_path / "fleetcom.db"
+    path.touch()
+    monkeypatch.setattr("sys.argv", ["fleetcom-mcp", "--db", str(path)])
+    with pytest.raises(SystemExit) as exit_info:
+        server.main()
+    message = str(exit_info.value.code)
+    assert "cannot open database" in message
+    assert "not a fleetcom database" in message
+    assert path.stat().st_size == 0
