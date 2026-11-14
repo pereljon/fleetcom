@@ -2,7 +2,7 @@
 
 Owns: the design for refusing a missing database file, expanding `~` in database paths, private modes on new database files, and lock errors at startup and in tool calls. Does NOT hold test cases or review findings (`db-open-safety-tests.md`).
 
-Status: designing on branch `db-open-safety`. Investigated against `main` at `a177129`, SQLite 3.53.1, and Python 3.11.15. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch B.
+Status: built on branch `db-open-safety` (commit `e932aaa`), awaiting merge review. Investigated against `main` at `a177129`, SQLite 3.53.1, and Python 3.11.15. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch B.
 
 ## Goal
 
@@ -25,7 +25,7 @@ A server must start on the live database or fail with a message that says why. I
 3. With `create=True`, `db.connect` creates a missing parent folder with mode 700 and a missing file with mode 600. An existing folder or file keeps its mode.
 4. `db.connect` opens the file with the URI `file:<absolute path>?mode=rw`, so SQLite never creates a file itself.
 5. `server._parse_args(argv)` replaces `_resolve_db_path`. It adds the `--create-db` flag and resolves the path from `--db`, then `FLEETCOM_DB_PATH`, then the default.
-6. `server.main` exits with status 1 and a one-line message on stderr when `db.connect` raises `FileNotFoundError` or `sqlite3.OperationalError`. The MCP client then reports that the server failed to start.
+6. `server.main` exits with status 1 and a one-line message on stderr when `db.connect` raises `FileNotFoundError`, another `OSError` (such as a read-only folder under `--create-db`), or `sqlite3.DatabaseError` (such as a file that is not a database). The MCP client then reports that the server failed to start.
 7. `_anticipated` turns an `OperationalError` whose message contains `locked` into a `ToolError` that says another fleetcom server held the write lock and that the caller should retry. Other `OperationalError`s propagate as before.
 8. `db.migrate` reads `schema_version` first. When the stored version equals `SCHEMA_VERSION`, it returns without writing. A new file runs the DDL and the stamp as before.
 

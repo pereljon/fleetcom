@@ -50,7 +50,7 @@ This installs a `fleetcom-mcp` executable (typically `~/.local/bin/fleetcom-mcp`
 
 ### 2. Connect Your Agents
 
-Fleetcom communicates over standard input/output (`stdio`). Point MCP clients at the **installed** launcher, not the dev checkout. MCP configs do not expand `~`, so replace it with your absolute home path in the examples below.
+Fleetcom communicates over standard input/output (`stdio`). Point MCP clients at the **installed** launcher, not the dev checkout. MCP clients start the server without a shell, so they do not expand `~` in `command`: replace it with your absolute home path there. Fleetcom itself expands `~` in `--db` and `FLEETCOM_DB_PATH`.
 
 #### Claude Code (`~/.claude.json`)
 
@@ -75,6 +75,18 @@ mcp_servers:
 ```
 
 The database path can be set either way: `--db <path>` (shown above) or the `FLEETCOM_DB_PATH` env var — the flag wins if both are given. Defaults to `~/.fleetcom/fleetcom.db` if neither is set.
+
+#### Create the database
+
+Fleetcom does not create a missing database. If the file does not exist, the server prints `database not found` to stderr and exits with status 1, so a mistyped path fails at startup instead of starting an empty database.
+
+To set up a new database, start the server once with `--create-db` and its input closed, so it creates the database and exits:
+
+```bash
+fleetcom-mcp --db ~/.fleetcom/fleetcom.db --create-db < /dev/null
+```
+
+`--create-db` makes the folder with mode 700 and the file with mode 600 (owner access only). An existing folder or file keeps its mode. Use the flag only for the first start. Do not leave it in a client config, because it would hide a mistyped path again.
 
 ---
 
@@ -106,7 +118,7 @@ List tools return at most `limit` rows (default 50, maximum 1,000,000) with a le
 
 - **Python + stdlib `sqlite3`**, official `mcp` SDK (`MCPServer`), stdio transport.
 - **Three tables** (`tasks`, `events`, `contacts`), no unified schema, no shared claim/lease columns.
-- **WAL mode** for safe concurrent access from multiple agent processes.
+- **WAL mode** for safe concurrent access from multiple agent processes. If another server holds the write lock for too long, a tool call returns a `database is locked` error that says to retry.
 - **Zero daemons:** the process starts when an agent connects and exits when it disconnects.
 
 ---

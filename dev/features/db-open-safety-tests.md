@@ -35,6 +35,27 @@ After the promote and client restarts (plan, Task E3):
 1. Run the installed `fleetcom-mcp --db <scratch folder>/does-not-exist.db`. Expect exit status 1, the `--create-db` message, and no file created.
 2. Confirm every client still reaches the live database with one `task_list` each from Hermes, Claude Code, and Codex.
 
+## Results
+
+2026-11-14, on branch `db-open-safety`:
+
+- `uv run pytest -q`: 120 passed. `ruff check` and `ruff format --check`: clean.
+- On the old code, every test errored, because the shared fixture passes `create=True`. Each new test was instead checked against a targeted mutation of the new code, and each mutation failed at least one test (review below).
+- The README's `--create-db` example, run on a scratch path with stdin closed, created the folder with mode 700 and the file with mode 600, and exited 0. A missing path exited 1 with the `--create-db` message and created nothing.
+
 ## Review findings
 
-None yet.
+A subagent reviewed `e932aaa` before the merge on 2026-11-14 (Opus, high effort), limited to findings with a clear execution path. It found no blocker.
+
+| ID | Finding | Evidence | Resolution |
+|----|---------|----------|------------|
+| R1 | A file that is not a database, or `--create-db` in a read-only folder, printed a traceback instead of the one-line message | Subprocess runs of `main` | `main` catches `OSError` and `sqlite3.DatabaseError`; test added for a file that is not a database |
+| R2 | No test covers `?mode=rw`; removing it passes every test | Mutation | Not changed: it matters only if the file disappears between the existence check and the open |
+| R3 | Under a regression, the home-folder test leaves a `~` folder in the working folder, and its second assertion cannot fail | Mutation left `./~/fleetcom.db` | The test changes to the temp folder first |
+
+The reviewer also confirmed by experiment:
+
+- Symlinked folders and files reach the same rows, `-wal` file, and write lock.
+- `create=True` keeps the mode of an existing file or folder.
+- With another connection holding the write lock, startup on a current database took no measurable time.
+- The lock mapping covers `task_accept`, `task_reject`, `task_update`, `contact_create`, and `event_delete`, and leaves no transaction open.
