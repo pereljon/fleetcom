@@ -9,6 +9,11 @@ Nothing in this project has been released yet; the entries below reflect the cur
 - Add `src/fleetcom`: Python package with SQLite storage (WAL) for three tables (`tasks`, `events`, `contacts`) via a shared generic CRUD engine. `tasks` absorbs what a standalone `reminders` table did in an earlier iteration (`remind_at`), plus `blocked`/`blocked_reason` and a `completed`/`reviewed` two-axis completion model — see `docs/ISSUES.md` (Decisions) for the design review behind both.
 - Add `fleetcom-mcp`: stdio MCP server (official `mcp` SDK) exposing 15 tools — plain create/list/update/delete over tasks/events/contacts, `task_accept`/`task_reject` for the review gate, and `agenda_today` aggregating tasks due now with today's events.
 - Add `--db` CLI flag (`FLEETCOM_DB_PATH` env var still works; the flag takes precedence).
+- Change a missing database from a silent new empty database to a startup error (exit status 1). Add `--create-db` to create one on purpose.
+- Expand `~` in `--db` and `FLEETCOM_DB_PATH`. It was taken literally before.
+- Create a new database file with mode 600 in a mode 700 folder (with `--create-db`).
+- Return `database is locked` from a tool call as a tool error with a retry hint.
+- Stop writing `schema_version` at startup when it is already current, so a held write lock no longer crashes startup.
 - Change the default database path to `~/.fleetcom/fleetcom.db`.
 - Fix list tools cutting rows silently: add `truncated` to `task_list`, `event_list`, and `contact_search`, and `tasks_truncated` and `events_truncated` to `agenda_today`.
 - Change the default `task_list` order to active, then unreviewed, then reviewed, newest first in each group.

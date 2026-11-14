@@ -1,4 +1,5 @@
 import asyncio
+import sqlite3
 
 import pytest
 from mcp import Client
@@ -9,7 +10,7 @@ from fleetcom.server import build_server
 
 @pytest.fixture
 def server(tmp_path):
-    conn = db.connect(str(tmp_path / "fleetcom.db"))
+    conn = db.connect(str(tmp_path / "fleetcom.db"), create=True)
     db.migrate(conn)
     return build_server(conn)
 
@@ -250,7 +251,7 @@ async def test_contact_create_and_search(server):
 
 
 async def test_concurrent_rejected_writes_do_not_lose_reported_writes(tmp_path):
-    conn = db.connect(str(tmp_path / "fleetcom.db"))
+    conn = db.connect(str(tmp_path / "fleetcom.db"), create=True)
     db.migrate(conn)
     server = build_server(conn)
     target = tasks.create(conn, created_by="a", summary="target")
@@ -280,3 +281,25 @@ async def test_concurrent_rejected_writes_do_not_lose_reported_writes(tmp_path):
     assert len(reported) == 150
     assert [i for i in reported if tasks.get(conn, i) is None] == []
     conn.close()
+
+
+async def test_a_locked_database_is_a_tool_error_with_a_reason(tmp_path):
+    path = str(tmp_path / "fleetcom.db")
+    conn = db.connect(path, create=True)
+    db.migrate(conn)
+    conn.execute("PRAGMA busy_timeout = 0")
+    holder = sqlite3.connect(path)
+    holder.execute("BEGIN IMMEDIATE")
+    try:
+        async with Client(build_server(conn)) as client:
+            res = await asyncio.wait_for(
+                client.call_tool("task_create", {"summary": "x", "created_by": "a"}),
+                timeout=10,
+            )
+        assert res.is_error is True
+        assert "locked" in res.content[0].text
+        assert "retry" in res.content[0].text
+    finally:
+        holder.rollback()
+        holder.close()
+        conn.close()

@@ -96,12 +96,12 @@ Answer these before the branch that needs them starts. Each has a recommended de
 **Files:**
 - Create: `dev/features/unknown-id-errors.md`, `dev/features/unknown-id-errors-tests.md`
 
-- [ ] **Step 1:** Run `git switch -c unknown-id-errors` from an up-to-date `main`.
-- [ ] **Step 2:** Run `uv run pytest -q`, `uv run ruff check`, and `uv run ruff format --check`. Record the baseline in the test plan.
-- [ ] **Step 3:** Load the `maintaining-dev-docs` skill. Write the design doc from the Design section above, with the answer to Q1.
-- [ ] **Step 4:** Write the test plan with the cases from Task A2 and the live check from Task E3.
-- [ ] **Step 5:** Review the test plan with the user. Do not continue until the user confirms it.
-- [ ] **Step 6:** Commit both docs on the branch.
+- [x] **Step 1:** Run `git switch -c unknown-id-errors` from an up-to-date `main`.
+- [x] **Step 2:** Run `uv run pytest -q`, `uv run ruff check`, and `uv run ruff format --check`. Record the baseline in the test plan.
+- [x] **Step 3:** Load the `maintaining-dev-docs` skill. Write the design doc from the Design section above, with the answer to Q1.
+- [x] **Step 4:** Write the test plan with the cases from Task A2 and the live check from Task E3.
+- [x] **Step 5:** Review the test plan with the user. Do not continue until the user confirms it.
+- [x] **Step 6:** Commit both docs on the branch.
 
 ### Task A2: Not-found errors in `crud` and the tools
 
@@ -114,7 +114,7 @@ Answer these before the branch that needs them starts. Each has a recommended de
 **Interfaces:**
 - Produces: `crud.NotFoundError(ValueError)`. `crud.update(...) -> bool` returns `True` when a row changed and `False` for no fields on an existing row. `crud.delete(...) -> bool` returns `True` or raises.
 
-- [ ] **Step 1: Write the failing tests.** In `tests/test_tasks.py`, replace `test_update_nonexistent_id_returns_false` and the last line of `test_delete_removes_row`:
+- [x] **Step 1: Write the failing tests.** In `tests/test_tasks.py`, replace `test_update_nonexistent_id_returns_false` and the last line of `test_delete_removes_row`:
 
 ```python
 from fleetcom import crud
@@ -166,9 +166,9 @@ async def test_unknown_id_is_an_error_naming_the_id(server, tool, args):
 
 If Q1 is approved, add `("task_accept", {"task_id": "missing-1", "actor": "cos"})` and `("task_reject", {"task_id": "missing-1", "actor": "cos", "note": "n"})` to the list. Keep the existing assertion at `tests/test_server.py:149` (`ok` is `False` for a task that is not completed).
 
-- [ ] **Step 2: Run the tests and confirm they fail.** Run `uv run pytest tests/test_tasks.py tests/test_server.py -q`. Expected: the new tests fail with `ok: false` results instead of errors. `test_update_with_no_fields_on_existing_id_returns_false` passes before and after; it guards the one remaining `ok: false` case.
+- [x] **Step 2: Run the tests and confirm they fail.** Run `uv run pytest tests/test_tasks.py tests/test_server.py -q`. Expected: the new tests fail with `ok: false` results instead of errors. `test_update_with_no_fields_on_existing_id_returns_false` passes before and after; it guards the one remaining `ok: false` case.
 
-- [ ] **Step 3: Implement.** In `src/fleetcom/crud.py`:
+- [x] **Step 3: Implement.** In `src/fleetcom/crud.py`:
 
 ```python
 class NotFoundError(ValueError):
@@ -215,24 +215,24 @@ If Q1 is approved, in `src/fleetcom/tasks.py` `accept` and `reject`, replace `re
     return cur.rowcount > 0
 ```
 
-- [ ] **Step 4: Update the tool docstrings** in `src/fleetcom/server.py`. Add one sentence to each of the six update and delete tools: "An unknown id is an error that names the id." For `task_update`, `event_update`, and `contact_update`, also say: "ok=false means no argument changed anything." If Q1 is approved, change "No-op (ok=False) unless the task is currently completed" in `task_accept` and `task_reject` to "ok=false means the task is not completed; an unknown id is an error."
+- [x] **Step 4: Update the tool docstrings** in `src/fleetcom/server.py`. Add one sentence to each of the six update and delete tools: "An unknown id is an error that names the id." For `task_update`, `event_update`, and `contact_update`, also say: "ok=false means no argument changed anything." If Q1 is approved, change "No-op (ok=False) unless the task is currently completed" in `task_accept` and `task_reject` to "ok=false means the task is not completed; an unknown id is an error."
 
-- [ ] **Step 5: Run the full suite.** Run `uv run pytest -q`, `uv run ruff check`, and `uv run ruff format --check`. Expected: all pass. Fix any other test that asserted `False` for an unknown id.
+- [x] **Step 5: Run the full suite.** Run `uv run pytest -q`, `uv run ruff check`, and `uv run ruff format --check`. Expected: all pass. Fix any other test that asserted `False` for an unknown id.
 
-- [ ] **Step 6: Commit** `src/fleetcom/crud.py`, `src/fleetcom/server.py`, `tests/test_tasks.py`, `tests/test_server.py`, and `src/fleetcom/tasks.py` if changed.
+- [x] **Step 6: Commit** `src/fleetcom/crud.py`, `src/fleetcom/server.py`, `tests/test_tasks.py`, `tests/test_server.py`, and `src/fleetcom/tasks.py` if changed.
 
 ### Task A3: Docs and merge
 
 **Files:**
 - Modify: `src/skills/fleetcom/SKILL.md`, `src/skills/fleetcom/references/tools.md`, `CHANGELOG.md`, `dev/CODEMAP.md` (crud row), `dev/SKELETON.md` (`_anticipated` paragraph), `docs/ISSUES.md`, the feature's design and test docs.
 
-- [ ] **Step 1:** Add to `SKILL.md` Task conventions: "An update or delete with an unknown id is an error that names the id. If you see one, check that you are on the live database before retrying."
-- [ ] **Step 2:** Add the same rule to the top of `references/tools.md`.
-- [ ] **Step 3:** Add to `CHANGELOG.md`: "Change update and delete tools to return an error naming the id when no row has it."
-- [ ] **Step 4:** Update the crud row in `dev/CODEMAP.md` and the `_anticipated` paragraph in `dev/SKELETON.md` to name `NotFoundError`.
-- [ ] **Step 5:** Mark the unknown-id bug resolved in `docs/ISSUES.md`, citing the branch.
-- [ ] **Step 6:** Dispatch a reviewer subagent (role "Code review before a merge"). Record its findings and resolutions in `unknown-id-errors-tests.md`.
-- [ ] **Step 7:** Commit the docs. Ask the user to approve the merge. After the merge, run the tests and linters on `main`.
+- [x] **Step 1:** Add to `SKILL.md` Task conventions: "An update or delete with an unknown id is an error that names the id. If you see one, check that you are on the live database before retrying."
+- [x] **Step 2:** Add the same rule to the top of `references/tools.md`.
+- [x] **Step 3:** Add to `CHANGELOG.md`: "Change update and delete tools to return an error naming the id when no row has it."
+- [x] **Step 4:** Update the crud row in `dev/CODEMAP.md` and the `_anticipated` paragraph in `dev/SKELETON.md` to name `NotFoundError`.
+- [x] **Step 5:** Mark the unknown-id bug resolved in `docs/ISSUES.md`, citing the branch.
+- [x] **Step 6:** Dispatch a reviewer subagent (role "Code review before a merge"). Record its findings and resolutions in `unknown-id-errors-tests.md`.
+- [x] **Step 7:** Commit the docs. Ask the user to approve the merge. After the merge, run the tests and linters on `main`.
 
 ---
 
@@ -270,12 +270,12 @@ If Q1 is approved, in `src/fleetcom/tasks.py` `accept` and `reject`, replace `re
 **Files:**
 - Create: `dev/features/db-open-safety.md`, `dev/features/db-open-safety-tests.md`
 
-- [ ] **Step 1:** Run `git switch -c db-open-safety` from an up-to-date `main`.
-- [ ] **Step 2:** Run the tests and linters and record the baseline.
-- [ ] **Step 3:** Load `maintaining-dev-docs`. Write the design doc from the Design section above, with the answer to Q4.
-- [ ] **Step 4:** Write the test plan with the cases from Tasks B2 to B4 and the live checks from Task E3.
-- [ ] **Step 5:** Review the test plan with the user. Do not continue until the user confirms it.
-- [ ] **Step 6:** Commit both docs on the branch.
+- [x] **Step 1:** Run `git switch -c db-open-safety` from an up-to-date `main`.
+- [x] **Step 2:** Run the tests and linters and record the baseline.
+- [x] **Step 3:** Load `maintaining-dev-docs`. Write the design doc from the Design section above, with the answer to Q4.
+- [x] **Step 4:** Write the test plan with the cases from Tasks B2 to B4 and the live checks from Task E3.
+- [x] **Step 5:** Review the test plan with the user. Do not continue until the user confirms it.
+- [x] **Step 6:** Commit both docs on the branch.
 
 ### Task B2: `db.connect` refuses a missing file unless asked to create it
 
@@ -287,7 +287,7 @@ If Q1 is approved, in `src/fleetcom/tasks.py` `accept` and `reject`, replace `re
 **Interfaces:**
 - Produces: `db.connect(path: str, *, create: bool = False) -> sqlite3.Connection`. Raises `FileNotFoundError` for a missing file when `create` is false.
 
-- [ ] **Step 1: Write the failing tests** in `tests/test_db.py`:
+- [x] **Step 1: Write the failing tests** in `tests/test_db.py`:
 
 ```python
 import stat
@@ -328,9 +328,9 @@ def test_connect_expands_home(monkeypatch, tmp_path):
 
 Add `from pathlib import Path` to the imports if it is missing.
 
-- [ ] **Step 2: Run the tests and confirm they fail.** Run `uv run pytest tests/test_db.py -q`. Expected: `TypeError` for the unknown `create` argument, and the missing-file test fails because a file is created.
+- [x] **Step 2: Run the tests and confirm they fail.** Run `uv run pytest tests/test_db.py -q`. Expected: `TypeError` for the unknown `create` argument, and the missing-file test fails because a file is created.
 
-- [ ] **Step 3: Implement** in `src/fleetcom/db.py`:
+- [x] **Step 3: Implement** in `src/fleetcom/db.py`:
 
 ```python
 def connect(path: str, *, create: bool = False) -> sqlite3.Connection:
@@ -358,11 +358,11 @@ def connect(path: str, *, create: bool = False) -> sqlite3.Connection:
 
 `touch` creates the file, so `mode=rw` is enough in both cases.
 
-- [ ] **Step 4: Update the call sites on new files.** Pass `create=True` in `tests/conftest.py:8`, `tests/test_server.py:12` and `:233`, `tests/test_db.py:101`, `:114`, `:123`, and `:129` (`_open_at_barrier`, which six processes call on one new file), `tests/test_tasks.py:149` (the first open of `shared.db`), and every `db.connect` in `tests/test_list_truncation.py`. Leave `tests/test_tasks.py:151` without it, because the file exists by then. Run `grep -n "db.connect" tests/` to confirm none is missed.
+- [x] **Step 4: Update the call sites on new files.** Pass `create=True` in `tests/conftest.py:8`, `tests/test_server.py:12` and `:233`, `tests/test_db.py:101`, `:114`, `:123`, and `:129` (`_open_at_barrier`, which six processes call on one new file), `tests/test_tasks.py:149` (the first open of `shared.db`), and every `db.connect` in `tests/test_list_truncation.py`. Leave `tests/test_tasks.py:151` without it, because the file exists by then. Run `grep -n "db.connect" tests/` to confirm none is missed.
 
-- [ ] **Step 5: Run the full suite.** Expected: all pass, including `test_servers_starting_together_on_a_new_file_all_succeed`, which now runs six concurrent `touch` calls with `exist_ok=True`.
+- [x] **Step 5: Run the full suite.** Expected: all pass, including `test_servers_starting_together_on_a_new_file_all_succeed`, which now runs six concurrent `touch` calls with `exist_ok=True`.
 
-- [ ] **Step 6: Commit** `src/fleetcom/db.py` and the changed test files.
+- [x] **Step 6: Commit** `src/fleetcom/db.py` and the changed test files.
 
 ### Task B3: `--create-db` flag and a clean exit for a missing file
 
@@ -374,7 +374,7 @@ def connect(path: str, *, create: bool = False) -> sqlite3.Connection:
 - Consumes: `db.connect(path, *, create)` from Task B2.
 - Produces: `server._parse_args(argv: list[str] | None = None) -> argparse.Namespace` with `db: str` and `create_db: bool`. Task D2 adds `--version` here.
 
-- [ ] **Step 1: Write the failing tests.** Replace `tests/test_cli.py` with:
+- [x] **Step 1: Write the failing tests.** Replace `tests/test_cli.py` with:
 
 ```python
 import pytest
@@ -416,9 +416,9 @@ def test_main_exits_with_a_message_for_a_folder_path(monkeypatch, tmp_path):
     assert "cannot open database" in str(exit_info.value.code)
 ```
 
-- [ ] **Step 2: Run the tests and confirm they fail.** Run `uv run pytest tests/test_cli.py -q`. Expected: `ImportError` for `_parse_args`.
+- [x] **Step 2: Run the tests and confirm they fail.** Run `uv run pytest tests/test_cli.py -q`. Expected: `ImportError` for `_parse_args`.
 
-- [ ] **Step 3: Implement** in `src/fleetcom/server.py`. Add `import sys` to the imports. Replace `_resolve_db_path` and `main`:
+- [x] **Step 3: Implement** in `src/fleetcom/server.py`. Add `import sys` to the imports. Replace `_resolve_db_path` and `main`:
 
 ```python
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -451,9 +451,9 @@ def main() -> None:
     server.run(transport="stdio")
 ```
 
-- [ ] **Step 4: Run the full suite and linters.** Expected: all pass.
+- [x] **Step 4: Run the full suite and linters.** Expected: all pass.
 
-- [ ] **Step 5: Commit** `src/fleetcom/server.py` and `tests/test_cli.py`.
+- [x] **Step 5: Commit** `src/fleetcom/server.py` and `tests/test_cli.py`.
 
 ### Task B4: Lock errors reach the caller; startup does not write when current
 
@@ -464,7 +464,7 @@ def main() -> None:
 **Interfaces:**
 - Produces: `db.migrate(conn) -> None` that writes nothing on a database already at `SCHEMA_VERSION`. Branch C calls a repair step after it in `server.main`.
 
-- [ ] **Step 1: Write the failing tests.** In `tests/test_server.py`:
+- [x] **Step 1: Write the failing tests.** In `tests/test_server.py`:
 
 ```python
 import sqlite3
@@ -510,9 +510,9 @@ def test_migrate_does_not_write_when_the_schema_is_current(tmp_path):
         conn.close()
 ```
 
-- [ ] **Step 2: Run the tests and confirm they fail.** Expected: the first fails with the generic "Error executing tool task_create" text, and the second raises `sqlite3.OperationalError: database is locked`.
+- [x] **Step 2: Run the tests and confirm they fail.** Expected: the first fails with the generic "Error executing tool task_create" text, and the second raises `sqlite3.OperationalError: database is locked`.
 
-- [ ] **Step 3: Implement.** In `_anticipated`, add a clause after the existing one:
+- [x] **Step 3: Implement.** In `_anticipated`, add a clause after the existing one:
 
 ```python
             except sqlite3.OperationalError as exc:
@@ -554,22 +554,22 @@ def migrate(conn: sqlite3.Connection) -> None:
     conn.commit()
 ```
 
-- [ ] **Step 4: Run the full suite and linters.** Expected: all pass, including `test_migrate_is_idempotent`.
+- [x] **Step 4: Run the full suite and linters.** Expected: all pass, including `test_migrate_is_idempotent`.
 
-- [ ] **Step 5: Commit** the four changed files.
+- [x] **Step 5: Commit** the four changed files.
 
 ### Task B5: Docs and merge
 
 **Files:**
 - Modify: `README.md` (configuration section), `src/skills/fleetcom/SKILL.md` (Wiring notes), `CHANGELOG.md`, `dev/CODEMAP.md` (db and server rows), `dev/SKELETON.md` (Logic Flow first bullet; the WAL-retry invariant), `dev/IMPLEMENTATION-SPEC.md` (Config Reference), `docs/ISSUES.md`, the feature's docs.
 
-- [ ] **Step 1:** Add `--create-db` to the Config Reference table and to the README configuration section. State that a missing database is an error without it.
-- [ ] **Step 2:** In `SKILL.md` Wiring notes, add: "A missing database file is a startup error. Pass `--create-db` only when setting up a new database."
-- [ ] **Step 3:** Add to `CHANGELOG.md`: "Change a missing database file to a startup error unless `--create-db` is passed; expand `~` in database paths." "Create new database files with mode 600 in a mode 700 folder." "Report `database is locked` as a tool error that says to retry." "Stop writing `schema_version` on every startup."
-- [ ] **Step 4:** Update `dev/SKELETON.md` and `dev/CODEMAP.md` for `connect(create=)`, `_parse_args`, and `migrate`.
-- [ ] **Step 5:** Mark resolved in `docs/ISSUES.md`: the wrong-`--db` item, the lock item, and the file-mode item.
-- [ ] **Step 6:** Dispatch a reviewer subagent ("Code review before a merge"). Record findings in `db-open-safety-tests.md`.
-- [ ] **Step 7:** Commit the docs. Ask the user to approve the merge. After the merge, run the tests and linters on `main`.
+- [x] **Step 1:** Add `--create-db` to the Config Reference table and to the README configuration section. State that a missing database is an error without it.
+- [x] **Step 2:** In `SKILL.md` Wiring notes, add: "A missing database file is a startup error. Pass `--create-db` only when setting up a new database."
+- [x] **Step 3:** Add to `CHANGELOG.md`: "Change a missing database file to a startup error unless `--create-db` is passed; expand `~` in database paths." "Create new database files with mode 600 in a mode 700 folder." "Report `database is locked` as a tool error that says to retry." "Stop writing `schema_version` on every startup."
+- [x] **Step 4:** Update `dev/SKELETON.md` and `dev/CODEMAP.md` for `connect(create=)`, `_parse_args`, and `migrate`.
+- [x] **Step 5:** Mark resolved in `docs/ISSUES.md`: the wrong-`--db` item, the lock item, and the file-mode item.
+- [x] **Step 6:** Dispatch a reviewer subagent ("Code review before a merge"). Record findings in `db-open-safety-tests.md`.
+- [/] **Step 7:** Commit the docs. Ask the user to approve the merge. After the merge, run the tests and linters on `main`.
 
 ---
 

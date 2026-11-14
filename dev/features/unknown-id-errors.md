@@ -2,7 +2,7 @@
 
 Owns: the design for making an unknown id an error on update, delete, accept, and reject tools. Does NOT hold test cases or review findings (`unknown-id-errors-tests.md`).
 
-Status: built on branch `unknown-id-errors` (commit `c8e9d5c`), awaiting merge review. Investigated against `main` at `188bca6`. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch A.
+Status: merged to `main` as `a177129` on 2026-11-14; not yet promoted. Investigated against `main` at `188bca6`. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch A.
 
 ## Goal
 

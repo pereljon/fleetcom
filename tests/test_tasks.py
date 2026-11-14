@@ -164,7 +164,7 @@ def test_reject_bounces_completed_back_to_in_progress(conn):
 )
 def test_rejected_write_releases_the_write_lock(tmp_path, rejected_write):
     path = str(tmp_path / "shared.db")
-    first = db.connect(path)
+    first = db.connect(path, create=True)
     db.migrate(first)
     second = db.connect(path)
     second.execute("PRAGMA busy_timeout = 100")

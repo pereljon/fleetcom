@@ -32,20 +32,23 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 - [ ] `scripts/promote.sh`: `--skill-only` stamps `mcp.promoted-sha` for an install that did not happen. `fleetcom-mcp` needs `--version` so a running build can report itself.
 - [ ] `scripts/promote.sh`: widen the guard beyond `src/`, require a clean `main`, and run the tests. `rm -rf` then `cp` can leave consumers with a broken skill.
 - [ ] Document the deploy flow in README, CODEMAP, and `AGENTS.md`, including "never hand-edit `deploy/`".
-- [ ] Any wrong `--db` or `FLEETCOM_DB_PATH` silently creates an empty database. `~` is not expanded. Consider an explicit flag to create a new database.
+- [x] (fixed 2026-11-14 on branch db-open-safety; dev/features/db-open-safety.md) Any wrong `--db` or `FLEETCOM_DB_PATH` silently creates an empty database. `~` is not expanded. Consider an explicit flag to create a new database.
 - [ ] Decide how Codex gets the skill. Codex skill delivery has not been checked.
 - [x] Check `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` (owned by Hermes) for the database path and WAL handling. `fleetcom.db` alone is out of date, because recent data sits in `fleetcom.db-wal`. (resolved 2026-11-01): checked by hermes-manager. The script hardcodes the old path and must not be rerun after the move; see `dev/features/db-move.md`.
 
 - [ ] Editing a reviewed task's `description` or `result_summary` keeps `reviewed=1` on content nobody reviewed, and an edit can erase the `[Accepted by]` record. Decide whether content edits clear `reviewed`.
 - [ ] `due`, `remind_at`, `start`, and `end` are unvalidated strings compared lexically, so non-UTC values surface at the wrong time. Decide whether to validate them.
 - [x] (resolved on `db-move`) `db.connect`: two servers starting together on a new file can crash at `PRAGMA journal_mode = WAL` with `database is locked` (28 of 80 launches in testing). A file already in WAL mode is unaffected, so this matters for a new or mistyped path, not for the move itself. The `db-move` feature fixes it.
-- [ ] `database is locked` is not mapped to `ToolError`, so callers see no reason and no retry hint. `db.migrate` writes `schema_version` on every startup, so a write lock held past the busy timeout also crashes startup with that error. `busy_timeout = 5000` measured about 13 seconds on SQLite 3.53.1.
-- [ ] A database created through the default path gets folder mode 755 and file mode 644 under umask 022, although it can hold personal data. The moved database gets 700 and 600 from the runbook. Decide whether `db.connect` tightens the modes.
+- [x] (fixed 2026-11-14 on branch db-open-safety; dev/features/db-open-safety.md) `database is locked` is not mapped to `ToolError`, so callers see no reason and no retry hint. `db.migrate` writes `schema_version` on every startup, so a write lock held past the busy timeout also crashes startup with that error. `busy_timeout = 5000` measured about 13 seconds on SQLite 3.53.1.
+- [x] (fixed 2026-11-14 on branch db-open-safety; dev/features/db-open-safety.md) A database created through the default path gets folder mode 755 and file mode 644 under umask 022, although it can hold personal data. The moved database gets 700 and 600 from the runbook. Decide whether `db.connect` tightens the modes.
 - [ ] `due=""` counts as permanently overdue. `task_update` cannot null a field, so `""` is the obvious way to try clearing one.
 - [ ] `scripts/promote.sh`: the install ignores `uv.lock`, so transitive packages drift from the tested set. A source-only promote may also reuse a stale build (unverified). Consider installing from the lock with `--reinstall`.
 
 ## Next steps
 
+- [/] Work through `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, one branch at a time; its checkboxes track progress. As of 2026-11-14, Branch A is merged, and Branch B (`db-open-safety`) is finished and reviewed but waits for the user's approval to merge. Next: Branch C (`utc-timestamps`), whose live-database count needs the user's go-ahead.
+- [ ] Before the promote (plan, Task E1 Step 3), confirm that no client config passes `--db` with a `~` path. Branch B makes `~` mean the home folder, so such a config would switch from a stray empty database to the live one.
+- [/] A Fable subagent review of the specs and feature docs started on 2026-11-14 and writes `docs/reviews/2026-11-14-fable-review.md`. If that file does not exist, the run did not finish: start it again. Then act on its findings with the user.
 - [x] Promote `list-truncation` and check it through the installed server (done 2026-11-02, `371acda`).
 - [ ] Restart the Hermes gateway and the other Claude Code and Codex sessions, because their servers still run the old code. Then run the client checks in `dev/features/list-truncation-tests.md` (Results, Not checked yet).
 - [ ] After promote, ask hermes-manager to update the CoS job: a true `truncated` on the review queue query means raise `limit`.

@@ -7,7 +7,7 @@ Maintain: update when architecture, settings, or behavior changes.
 
 Fleetcom is a single Python process, run on demand by an MCP client (Claude Code, a Hermes profile), speaking stdio JSON-RPC via the official `mcp` SDK's `MCPServer`. It has no daemon, no network port, and no background task.
 
-Storage is one SQLite file, opened once per process with `PRAGMA journal_mode=WAL`, `busy_timeout=5000`, `foreign_keys=ON`. Three independent tables hold the primitives (`tasks`, `events`, `contacts`); there is no unified "item" table and no cross-entity foreign keys — each row is self-contained aside from the plain-string `owner` (nullable) and `created_by` (required) fields.
+Storage is one SQLite file, opened once per process through a `mode=rw` URI, so SQLite never creates the file itself. `db.connect` creates a missing file only when `create=True` (the `--create-db` flag): folder mode 700, file mode 600. The open sets `PRAGMA journal_mode=WAL`, `busy_timeout=5000`, `foreign_keys=ON`. Three independent tables hold the primitives (`tasks`, `events`, `contacts`); there is no unified "item" table and no cross-entity foreign keys — each row is self-contained aside from the plain-string `owner` (nullable) and `created_by` (required) fields.
 
 `src/fleetcom/crud.py` is a small generic engine (`create`/`get`/`update`/`delete`) parameterized by table name and an allow-listed field set, used by all three entity modules (`tasks.py`, `events.py`, `contacts.py`). Each entity module writes its own list query (`tasks.list`, `events.list_in_range`, `contacts.search`), and `util.capped` adds the `truncated` result above them, and `tasks.accept`/`tasks.reject` bypass the generic engine entirely for status-gated transitions the engine has no concept of.
 
@@ -19,7 +19,8 @@ Storage is one SQLite file, opened once per process with `PRAGMA journal_mode=WA
 
 | Setting | Source | Default |
 |---|---|---|
-| Database path | `--db` flag, then `FLEETCOM_DB_PATH` env var | `~/.fleetcom/fleetcom.db` |
+| Database path | `--db` flag, then `FLEETCOM_DB_PATH` env var; `~` is expanded | `~/.fleetcom/fleetcom.db` |
+| Create a missing database | `--create-db` flag | off: a missing file is a startup error (exit status 1) |
 | Python version | `pyproject.toml` `requires-python` | `>=3.11` |
 | MCP SDK | `mcp` dependency | `>=2.2,<2.3` (`mcp.server.mcpserver` API) |
 

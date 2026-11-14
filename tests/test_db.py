@@ -1,6 +1,8 @@
 import multiprocessing
 import sqlite3
+import stat
 import time
+from pathlib import Path
 from typing import ClassVar
 
 import pytest
@@ -98,7 +100,7 @@ def _connect_with_factory(monkeypatch, factory):
 def test_connect_retries_a_locked_wal_pragma(monkeypatch, tmp_path, fake_clock):
     factory = _connection_failing_wal("database is locked", failures=2)
     _connect_with_factory(monkeypatch, factory)
-    conn = db.connect(str(tmp_path / "f.db"))
+    conn = db.connect(str(tmp_path / "f.db"), create=True)
     assert factory.attempts == 3
     assert "PRAGMA busy_timeout = 5000" in factory.statements
     assert conn.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
@@ -111,7 +113,7 @@ def test_connect_gives_up_on_a_lock_after_ten_seconds(
     factory = _connection_failing_wal("database is locked", failures=10**6)
     _connect_with_factory(monkeypatch, factory)
     with pytest.raises(sqlite3.OperationalError, match="locked"):
-        db.connect(str(tmp_path / "f.db"))
+        db.connect(str(tmp_path / "f.db"), create=True)
     assert 10 <= fake_clock["now"] < 10.1
     assert factory.attempts > 100
 
@@ -120,13 +122,13 @@ def test_connect_does_not_retry_other_errors(monkeypatch, tmp_path, fake_clock):
     factory = _connection_failing_wal("disk I/O error", failures=10**6)
     _connect_with_factory(monkeypatch, factory)
     with pytest.raises(sqlite3.OperationalError, match="disk I/O"):
-        db.connect(str(tmp_path / "f.db"))
+        db.connect(str(tmp_path / "f.db"), create=True)
     assert factory.attempts == 1
 
 
 def _open_at_barrier(path, barrier):
     barrier.wait(timeout=20)
-    db.migrate(db.connect(path))
+    db.migrate(db.connect(path, create=True))
 
 
 def test_servers_starting_together_on_a_new_file_all_succeed(tmp_path):
@@ -151,3 +153,52 @@ def test_servers_starting_together_on_a_new_file_all_succeed(tmp_path):
         check = sqlite3.connect(path)
         assert check.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
         check.close()
+
+
+def test_connect_refuses_a_missing_file(tmp_path):
+    path = tmp_path / "missing" / "fleetcom.db"
+    with pytest.raises(FileNotFoundError, match="--create-db"):
+        db.connect(str(path))
+    assert not path.parent.exists()
+
+
+def test_connect_creates_a_private_file_when_asked(tmp_path):
+    path = tmp_path / "new" / "fleetcom.db"
+    conn = db.connect(str(path), create=True)
+    db.migrate(conn)
+    assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    assert stat.S_IMODE(Path(f"{path}-wal").stat().st_mode) == 0o600
+    conn.close()
+
+
+def test_connect_opens_an_existing_file_without_create(tmp_path):
+    path = tmp_path / "fleetcom.db"
+    db.migrate(db.connect(str(path), create=True))
+    conn = db.connect(str(path))
+    assert conn.execute("SELECT version FROM schema_version").fetchone()[0] == 1
+    conn.close()
+
+
+def test_connect_expands_home(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.chdir(tmp_path)
+    conn = db.connect("~/fleetcom.db", create=True)
+    conn.close()
+    assert (tmp_path / "fleetcom.db").exists()
+    assert not (tmp_path / "~").exists()
+
+
+def test_migrate_does_not_write_when_the_schema_is_current(tmp_path):
+    path = str(tmp_path / "fleetcom.db")
+    db.migrate(db.connect(path, create=True))
+    conn = db.connect(path)
+    conn.execute("PRAGMA busy_timeout = 0")
+    holder = sqlite3.connect(path)
+    holder.execute("BEGIN IMMEDIATE")
+    try:
+        db.migrate(conn)
+    finally:
+        holder.rollback()
+        holder.close()
+        conn.close()

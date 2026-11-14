@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import functools
 import sqlite3
+import sys
 import threading
 from typing import Any
 
@@ -34,6 +35,13 @@ def _anticipated(fn):
                 return fn(*args, **kwargs)
             except (ValueError, sqlite3.IntegrityError) as exc:
                 raise ToolError(str(exc)) from exc
+            except sqlite3.OperationalError as exc:
+                if "locked" not in str(exc):
+                    raise
+                raise ToolError(
+                    "database is locked: another fleetcom server held the write "
+                    "lock past the busy timeout; retry the call"
+                ) from exc
 
     return wrapper
 
@@ -288,19 +296,31 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
     return mcp
 
 
-def _resolve_db_path(argv: list[str] | None = None) -> str:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="fleetcom-mcp")
     parser.add_argument(
         "--db",
         default=None,
         help="Path to the fleetcom SQLite database (overrides FLEETCOM_DB_PATH)",
     )
+    parser.add_argument(
+        "--create-db",
+        action="store_true",
+        help="Create the database if it does not exist",
+    )
     args = parser.parse_args(argv)
-    return args.db or db.default_db_path()
+    args.db = args.db or db.default_db_path()
+    return args
 
 
 def main() -> None:
-    conn = db.connect(_resolve_db_path())
+    args = _parse_args()
+    try:
+        conn = db.connect(args.db, create=args.create_db)
+    except FileNotFoundError as error:
+        sys.exit(f"fleetcom-mcp: {error}")
+    except (OSError, sqlite3.DatabaseError) as error:
+        sys.exit(f"fleetcom-mcp: cannot open database {args.db}: {error}")
     db.migrate(conn)
     server = build_server(conn)
     server.run(transport="stdio")
