@@ -29,6 +29,11 @@ On branch `utc-timestamps` at `923a5e8`, 2026-11-14: `uv run pytest -q` gave 126
 | Repair, clean | A database with only UTC times | Nothing fixed, nothing left |
 | Repair, locked | Another connection holds `BEGIN IMMEDIATE`; repair with `busy_timeout = 0`, then again after release | First call fixes nothing and raises nothing; second fixes the row |
 | Startup message | `server.main` on a database with one fixed and one unreadable row, with `server.build_server` replaced by a stub whose `run` returns at once | stderr names the fixed count, and names the unreadable row by table and id, not by value |
+| Repair, commit | The repair test above, with the fixed value read back through a second connection | The value is committed and the connection under test holds no transaction |
+| Repair, constraint | An event that breaks `CHECK (end >= start)` after conversion, beside a task with an offset `due` | The event is listed and unchanged; the task is fixed |
+| Repair, partial row | A task with an unreadable `due` and an offset `remind_at` | `remind_at` is rewritten; the row counts as fixed and is also listed |
+| `event_list`, bad bound | `events.list_in_range(start="x", ...)` | `ValueError` naming `start` |
+| `event_list`, empty bound | `events.list_in_range(start="", ...)` | `ValueError`; no rows are returned |
 
 Every case above must fail on the current code before the fix lands, except the clean-repair case, which needs the new function to exist and guards against the repair writing on a clean database.
 
@@ -42,8 +47,24 @@ After the promote and client restarts (plan, Task E3):
 
 ## Results
 
-Not run yet.
+- On the old code (`1b7abe4`, tests only): 26 new tests failed and 126 passed.
+- With the code (`4561a9b`): 152 passed.
+- After the review follow-ups (`807d9d6`, `b174145`): 156 passed. `ruff check` and `ruff format --check` are clean.
+- Manual run of the real `fleetcom-mcp` on a scratch database: an offset `due` became `17:00:00Z`, a date-only `remind_at` became midnight UTC, and `updated_at` did not change. stderr printed `normalized times in 1 rows to UTC` and `could not normalize times in tasks b`, without the stored value. A second start printed only the second line. Each start exited 0.
+- A held write lock delayed startup by about 13 s in the reviewer's run, not the 5 s busy timeout. This predates the branch, startup still succeeds, and the cause was not investigated.
+- Live checks: not run. They follow the promote (plan, Task E3).
 
 ## Review findings
 
-None yet.
+A pre-merge review on 2026-11-14 (Opus, high effort) found no code blocker.
+
+| ID | Finding | Evidence | Resolution |
+|----|---------|----------|------------|
+| R1 | Test gap: no test checked that the repair commits | Mutation: `with conn:` to `if True:` passed all tests | Tests added in `807d9d6`; the mutation now fails two tests |
+| R2 | Test gap: the `IntegrityError` path was untested | Mutation: `except KeyError` passed all tests | Test added with an event whose end precedes its start only in UTC; the mutation now fails it |
+| R3 | Rollout limitation: during a rollout, `events.update` that passes only `start` or only `end` compares a UTC value with the other stored time in offset form | Experiment against rows an old server wrote | Recorded in `docs/ISSUES.md`; no code change |
+| R4 | `event_list` with `start=""` returned nothing, and a bad bound's error did not name it | Experiment | Fixed in `b174145` |
+| R5 | The repair's old-value guard and fixed count were untested | Mutations | Recorded in `docs/ISSUES.md` |
+| R6 | One `to_utc` test catches the missing naive-as-UTC step only when the host is not in UTC | Review reading of the test | Not changed: the repo has no CI, and local runs catch it |
+
+The partial rewrite of a row with one unreadable time was judged acceptable. It is in the design and covered by a test.

@@ -2,7 +2,7 @@
 
 Owns: the design for storing `due`, `remind_at`, `start`, and `end` in UTC, rejecting unparseable times, clearing a time with `""`, and repairing stored rows at startup. Does NOT hold test cases or review findings (`utc-timestamps-tests.md`).
 
-Status: designing on branch `utc-timestamps`. Investigated against `main` at `923a5e8`, Python 3.11. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch C, which holds the code for each step.
+Status: built on branch `utc-timestamps`; reviewed; awaiting merge. Investigated against `main` at `923a5e8`, Python 3.11. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch C, which holds the code for each step.
 
 ## Goal
 
@@ -29,8 +29,8 @@ Status: designing on branch `utc-timestamps`. Investigated against `main` at `92
    3. It skips a value `to_utc` cannot read and a row whose `UPDATE` breaks a constraint, and lists both. It still rewrites the readable times in a row that has an unreadable one, so that row can appear in both startup messages.
    4. If the write lock is held past the busy timeout, it skips the repair, and the next startup retries. Startup never fails because of the repair.
    5. It does not change `updated_at`, because the content did not change.
-   6. It returns the number of rows fixed and the list of rows left, as `table id` pairs.
-7. `server.main` prints `fleetcom-mcp: normalized times in N rows to UTC` to stderr when it fixed any row. When rows were left, it prints `fleetcom-mcp: could not normalize times in tasks <id>, ...`, naming each row by table and id and never by value. The MCP channel is stdout, so stderr is safe.
+   6. It returns the tuple `(rows fixed, list of (table, id))`. A row counts as fixed when its `UPDATE` changed it, and it appears in the list when a time in it could not be fixed.
+7. `server.main` prints two stderr lines. When it fixed any row, it prints `fleetcom-mcp: normalized times in N rows to UTC`. When rows were left, it prints `fleetcom-mcp: could not normalize times in tasks <id>, events <id>, ...`, naming each row by table and id and never by value. The MCP channel is stdout, so stderr is safe.
 
 The repair runs at every startup because servers that have not restarted keep writing offset times until they do. The next new server fixes those rows.
 
