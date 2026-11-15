@@ -208,7 +208,7 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
         """Update an event. Only non-null arguments are changed. ok=false means no
         argument changed anything. An unknown id is an error that names the id.
         Times are ISO-8601; fleetcom stores them in UTC, reads a time without an offset as UTC,
-        and rejects anything it cannot parse."""
+        and rejects anything it cannot parse. end='' clears the field; start cannot be cleared."""
         fields = _updated_fields(
             summary=summary,
             description=description,
