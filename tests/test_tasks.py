@@ -1,8 +1,11 @@
 import sqlite3
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 
 from fleetcom import crud, db, tasks
+
+PACIFIC = timezone(timedelta(hours=-8))
 
 
 def test_create_and_get(conn):
@@ -243,3 +246,38 @@ def test_accept_and_reject_append_to_description(conn):
     assert tasks.get(conn, task_id)["description"] == (
         "original\n\n[Rejected by hermes:cos]: redo\n\n[Accepted by hermes:cos]"
     )
+
+
+def test_create_stores_due_and_remind_at_in_utc(conn):
+    task_id = tasks.create(
+        conn,
+        created_by="a",
+        summary="x",
+        due="2026-11-02T09:00:00-08:00",
+        remind_at="2026-11-02",
+    )
+    row = tasks.get(conn, task_id)
+    assert row["due"] == "2026-11-02T17:00:00Z"
+    assert row["remind_at"] == "2026-11-02T00:00:00Z"
+
+
+def test_due_now_does_not_flag_an_offset_due_early(conn):
+    later = datetime.now(UTC) + timedelta(hours=4)
+    due = later.astimezone(PACIFIC).isoformat(timespec="seconds")
+    task_id = tasks.create(conn, created_by="a", summary="x", due=due)
+    assert task_id not in [t["id"] for t in tasks.list(conn, due_now=True)]
+
+
+def test_update_with_empty_string_clears_due(conn):
+    task_id = tasks.create(
+        conn, created_by="a", summary="x", due="2000-01-01T00:00:00Z"
+    )
+    assert task_id in [t["id"] for t in tasks.list(conn, due_now=True)]
+    tasks.update(conn, task_id, due="")
+    assert tasks.get(conn, task_id)["due"] is None
+    assert task_id not in [t["id"] for t in tasks.list(conn, due_now=True)]
+
+
+def test_create_rejects_an_unparseable_due(conn):
+    with pytest.raises(ValueError, match="due"):
+        tasks.create(conn, created_by="a", summary="x", due="next tuesday")
