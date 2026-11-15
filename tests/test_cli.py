@@ -1,3 +1,5 @@
+from importlib.metadata import version
+
 import pytest
 
 from fleetcom import db, server
@@ -90,3 +92,14 @@ def test_main_reports_normalized_and_unreadable_rows_on_stderr(
     assert "normalized times in 1 rows to UTC" in err
     assert "could not normalize times in tasks bad-id" in err
     assert "next tuesday" not in err
+
+
+def test_version_prints_the_package_version_without_opening_a_database(
+    monkeypatch, tmp_path, capsys
+):
+    monkeypatch.setenv("FLEETCOM_DB_PATH", str(tmp_path / "missing.db"))
+    with pytest.raises(SystemExit) as exit_info:
+        _parse_args(["--version"])
+    assert exit_info.value.code == 0
+    assert capsys.readouterr().out.strip() == f"fleetcom-mcp {version('fleetcom')}"
+    assert not (tmp_path / "missing.db").exists()
