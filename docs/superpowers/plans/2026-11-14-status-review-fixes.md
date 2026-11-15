@@ -1215,7 +1215,7 @@ Promote installs outside the project folder, so `development/AGENTS.md` (Release
 Run each check through the installed `fleetcom-mcp`, against the live database, with the user's go-ahead. Delete every test row afterwards and confirm the delete.
 
 - [ ] **Step 1 (A):** Call `task_update` with a made-up id. Expected: an error that names the id.
-- [ ] **Step 2 (B):** Run `fleetcom-mcp --db /tmp/does-not-exist.db` from the scratchpad. Expected: exit status 1 and the `--create-db` message, and no file created.
+- [ ] **Step 2 (B):** Run `fleetcom-mcp --db <scratch folder>/does-not-exist.db`. Expected: exit status 1 and the `--create-db` message, and no file created.
 - [ ] **Step 3 (C):** After the restart, re-run the read-only count from Task C1 Step 3. Expected: no row with a parseable non-UTC time. Check the Hermes gateway log or a session's MCP log for the `normalized times in N rows` line. Create a task with `due` in `-08:00`, read it back in UTC, then delete it.
 - [ ] **Step 4 (item 5):** Run the list-truncation checks that are still open (`dev/features/list-truncation-tests.md`, Results, "Not checked yet"): `agenda_today` through a Hermes client, and one `task_list` each from Hermes, Claude Code, and Codex. Use an interactive Codex session, because `codex exec` refuses the tool call under approval policy `never`.
 - [ ] **Step 5:** Record the results under `## Results` in each feature's `-tests.md`, and in `list-truncation-tests.md`.
