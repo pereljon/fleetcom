@@ -35,7 +35,20 @@ The real promote is plan Task E2, after the version bump in Task E1. Run `fleetc
 
 ## Results
 
-Not run yet.
+2026-11-14, on branch `promote-hardening`:
+
+- On the old code, the `--version` test failed with exit code 2 (`e8ac15a`). With the code (`33bc8af`), `uv run pytest -q` gave 157 passed, and `ruff check` and `ruff format --check` were clean.
+- Check 1: `bash -n` and `shellcheck` reported nothing on `3aea180`.
+- Check 2: with an untracked file in the tree, `promote.sh --skill-only` exited 1 with "the working tree is not clean".
+- Check 3: on the clean branch, `promote.sh` exited 1 with "promote only from main". After checks 2 and 3, both promoted-SHA stamps in `deploy/` had the same contents and modification times as before.
+- Checks 4 to 7 ran in a scratch clone of `3aea180` renamed to `main`. `uv tool dir --bin` printed the scratch launcher folder under the scratch variables.
+- Check 4: the full promote exited 0. The scratch launcher printed `fleetcom-mcp 0.1.0`, both stamps equalled `HEAD`, and the scratch skill link pointed at the clone's `deploy/skills/fleetcom`.
+- Check 5: the scratch tool folder held `mcp-2.2.0`, the version in `uv.lock`.
+- Check 6: with the scratch launcher folder read-only, the full promote exited 2 at `uv tool install` ("Failed to install executable"). Both stamps still held the check 4 commit, and no `.new` or `.old` copy was left.
+- Check 7: `--skill-only` after a new commit exited 0. The skill stamp held the new commit, `deploy/mcp.promoted-sha` still held the check 4 commit, and no `.new` or `.old` copy was left.
+- The real launcher in `~/.local/bin` and the real `~/.claude/skills/fleetcom` link were unchanged after all checks.
+
+Finding from check 6: uv had already rebuilt the tool environment when it failed to link the launcher, and the existing launcher link then ran the rebuilt environment. So a failed install can still leave the new server live beside the old skill. The design accepts that direction: the old skill gives older advice, which the new server accepts.
 
 ## Review findings
 
