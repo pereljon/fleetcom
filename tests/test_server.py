@@ -359,3 +359,11 @@ async def test_empty_string_clears_a_time_through_the_tools(tmp_path):
         conn.execute("SELECT end FROM events WHERE id = ?", (event_id,)).fetchone()[0]
         is None
     )
+
+
+async def test_event_update_description_says_how_to_clear_end(server):
+    async with Client(server) as client:
+        tools = await asyncio.wait_for(client.list_tools(), timeout=10)
+    description = next(t.description for t in tools.tools if t.name == "event_update")
+    assert "end=''" in description
+    assert "start cannot be cleared" in description

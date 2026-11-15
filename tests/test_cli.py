@@ -103,3 +103,24 @@ def test_version_prints_the_package_version_without_opening_a_database(
     assert exit_info.value.code == 0
     assert capsys.readouterr().out.strip() == f"fleetcom-mcp {version('fleetcom')}"
     assert not (tmp_path / "missing.db").exists()
+
+
+def test_main_creates_and_migrates_a_new_database_before_normalizing(
+    monkeypatch, tmp_path
+):
+    path = tmp_path / "new.db"
+
+    class StubServer:
+        def run(self, **kwargs):
+            pass
+
+    monkeypatch.setattr(server, "build_server", lambda conn: StubServer())
+    monkeypatch.setattr("sys.argv", ["fleetcom-mcp", "--db", str(path), "--create-db"])
+    server.main()
+
+    conn = db.connect(str(path))
+    try:
+        row = conn.execute("SELECT version FROM schema_version WHERE id = 1").fetchone()
+        assert row[0] == 1
+    finally:
+        conn.close()
