@@ -21,12 +21,12 @@ Status: designing on branch `utc-timestamps`. Investigated against `main` at `92
 1. `util.to_utc(value)` returns `None` for `None` and for `""`. It parses any other value with `datetime.fromisoformat`, reads a value without an offset as UTC, and returns `%Y-%m-%dT%H:%M:%SZ`. Fractional seconds are dropped, and a date-only value becomes midnight UTC.
 2. `to_utc` raises `ValueError("not an ISO-8601 time: <value>")` for a value it cannot parse or cannot convert to UTC. `_anticipated` turns it into a tool error.
 3. `util.normalize_times(fields, names)` returns a copy with each named field passed through `to_utc`, and puts the field name in any error.
-4. `tasks.create` and `tasks.update` normalize `due` and `remind_at`. `events.create` and `events.update` normalize `start` and `end`. `events.list_in_range` normalizes its two bounds.
+4. `tasks.create` and `tasks.update` normalize `due` and `remind_at`. `events.create` and `events.update` normalize `start` and `end`. `events.list_in_range` normalizes its two bounds with `normalize_times`, so an error names the bound, and raises `ValueError` when a bound is `""` (review finding R4).
 5. `task_update(due="")` therefore stores `NULL`, which is the clearing path for `due`, `remind_at`, and `end`. `start` is `NOT NULL`, so `event_update(start="")` fails on the constraint and returns a tool error.
 6. `db.normalize_stored_times(conn)` runs in `server.main` after `db.migrate`, at every startup:
    1. It selects only rows with a time that is not null and does not match the `now_iso()` pattern, so a clean database costs no write.
    2. It rewrites all of a row's time columns in one `UPDATE`, guarded by the old values, inside one `with conn:` block. One statement per row keeps the events `CHECK (end >= start)` true.
-   3. It skips a value `to_utc` cannot read and a row whose `UPDATE` breaks a constraint, and lists both.
+   3. It skips a value `to_utc` cannot read and a row whose `UPDATE` breaks a constraint, and lists both. It still rewrites the readable times in a row that has an unreadable one, so that row can appear in both startup messages.
    4. If the write lock is held past the busy timeout, it skips the repair, and the next startup retries. Startup never fails because of the repair.
    5. It does not change `updated_at`, because the content did not change.
    6. It returns the number of rows fixed and the list of rows left, as `table id` pairs.
