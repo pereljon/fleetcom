@@ -2,7 +2,7 @@
 
 Owns: the design for storing `due`, `remind_at`, `start`, and `end` in UTC, rejecting unparseable times, clearing a time with `""`, and repairing stored rows at startup. Does NOT hold test cases or review findings (`utc-timestamps-tests.md`).
 
-Status: built on branch `utc-timestamps`; reviewed; awaiting merge. Investigated against `main` at `923a5e8`, Python 3.11. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch C, which holds the code for each step.
+Status: merged to `main` as `154a1dd` on 2026-11-14; not yet promoted. Investigated against `main` at `923a5e8`, Python 3.11. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch C, which holds the code for each step.
 
 ## Goal
 

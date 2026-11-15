@@ -999,7 +999,7 @@ In `server.main`, after `db.migrate(conn)`:
 - [x] **Step 4:** Add to `CHANGELOG.md`: "Fix `due_now` and `agenda_today` misjudging times with a UTC offset: times are stored in UTC, and existing rows are repaired at startup." "Reject unparseable times." "Let `""` clear `due`, `remind_at`, and `end`."
 - [x] **Step 5:** In `docs/ISSUES.md`, mark the offset bug and the `due=""` item resolved. Mark the duplicate Planned item ("`due`, `remind_at`, `start`, and `end` are unvalidated strings") resolved by the same branch.
 - [x] **Step 6:** Dispatch a reviewer subagent ("Code review before a merge"). Ask it to check the events `CHECK` path and the repair's lock handling specifically. Record findings in `utc-timestamps-tests.md`.
-- [ ] **Step 7:** Commit the docs. Ask the user to approve the merge. After the merge, run the tests and linters on `main`.
+- [x] **Step 7:** Commit the docs. Ask the user to approve the merge. After the merge, run the tests and linters on `main`.
 
 ---
 
