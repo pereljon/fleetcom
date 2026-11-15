@@ -70,3 +70,13 @@ def test_list_in_range_normalizes_its_bounds(conn):
         conn, start="2026-11-02T09:00:00-08:00", end="2026-11-02T10:00:00-08:00"
     )
     assert [r["id"] for r in rows] == [event_id]
+
+
+def test_list_in_range_names_the_bad_bound(conn):
+    with pytest.raises(ValueError, match="start"):
+        events.list_in_range(conn, start="x", end="2030-01-01")
+
+
+def test_list_in_range_rejects_empty_bound(conn):
+    with pytest.raises(ValueError):
+        events.list_in_range(conn, start="", end="2030-01-01")

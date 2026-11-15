@@ -282,6 +282,15 @@ def test_normalize_stored_times_fixes_offsets_and_blanks(conn):
         )
 
     assert db.normalize_stored_times(conn) == (3, [("tasks", "t4")])
+    assert not conn.in_transaction
+
+    other = sqlite3.connect(conn.execute("PRAGMA database_list").fetchone()[2])
+    try:
+        assert other.execute("SELECT due FROM tasks WHERE id = 't1'").fetchone() == (
+            "2026-11-02T17:00:00Z",
+        )
+    finally:
+        other.close()
 
     def value(table, column, id_):
         return conn.execute(
@@ -296,6 +305,34 @@ def test_normalize_stored_times_fixes_offsets_and_blanks(conn):
         "2026-11-02T17:00:00Z",
         "2026-11-02T18:00:00Z",
     )
+
+
+def test_normalize_stored_times_lists_row_that_breaks_a_constraint(conn):
+    with conn:
+        conn.execute(
+            "INSERT INTO events (id, summary, start, end, created_by, created_at, updated_at) "
+            "VALUES ('e1', 'x', '2026-11-02T10:00:00-08:00', '2026-11-02T11:00:00Z', 'a', 't', 't')"
+        )
+    _raw_task(conn, "t1", due="2026-11-02T09:00:00-08:00")
+
+    assert db.normalize_stored_times(conn) == (1, [("events", "e1")])
+
+    row = conn.execute("SELECT start, end FROM events WHERE id = 'e1'").fetchone()
+    assert (row["start"], row["end"]) == (
+        "2026-11-02T10:00:00-08:00",
+        "2026-11-02T11:00:00Z",
+    )
+    due = conn.execute("SELECT due FROM tasks WHERE id = 't1'").fetchone()[0]
+    assert due == "2026-11-02T17:00:00Z"
+
+
+def test_normalize_stored_times_rewrites_readable_time_beside_unreadable(conn):
+    _raw_task(conn, "t1", due="next tuesday", remind_at="2026-11-02T09:00:00-08:00")
+
+    assert db.normalize_stored_times(conn) == (1, [("tasks", "t1")])
+
+    row = conn.execute("SELECT due, remind_at FROM tasks WHERE id = 't1'").fetchone()
+    assert (row["due"], row["remind_at"]) == ("next tuesday", "2026-11-02T17:00:00Z")
 
 
 def test_normalize_stored_times_writes_nothing_when_clean(conn):
@@ -313,6 +350,7 @@ def test_normalize_stored_times_skips_when_locked(tmp_path):
     holder.execute("BEGIN IMMEDIATE")
     try:
         assert db.normalize_stored_times(conn) == (0, [])
+        assert not conn.in_transaction
     finally:
         holder.rollback()
         holder.close()
