@@ -50,7 +50,7 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 
 ## Next steps
 
-- [/] Work through `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, one branch at a time; its checkboxes track progress. As of 2026-11-14, Branch A is merged, and Branch B (`db-open-safety`) is merged as `104283d`. The fix for finding S1 is merged as `5855cef`. Branch C (`utc-timestamps`) is merged as `154a1dd`, not yet promoted. Branch D (`promote-hardening`) is built, reviewed, and awaiting merge.
+- [/] Work through `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, one branch at a time; its checkboxes track progress. As of 2026-11-14, Branch A is merged, and Branch B (`db-open-safety`) is merged as `104283d`. The fix for finding S1 is merged as `5855cef`. Branch C (`utc-timestamps`) is merged as `154a1dd`, not yet promoted. Branch D (`promote-hardening`) is merged as `dd13e30`. Next: Task E (version bump, promote, restarts, live checks), which needs the user's authorization to release.
 - [ ] Before the promote (plan, Task E1 Step 3), confirm that no client config passes `--db` with a `~` path. Branch B makes `~` mean the home folder, so such a config would switch from a stray empty database to the live one.
 - [x] A Fable subagent review of the specs and feature docs, written to `docs/reviews/2026-11-14-fable-review.md`. (resolved 2026-11-14): the file exists; finding S1 is fixed and merged as `5855cef`.
 - [x] Promote `list-truncation` and check it through the installed server (done 2026-11-02, `371acda`).

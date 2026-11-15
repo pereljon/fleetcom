@@ -2,7 +2,7 @@
 
 Owns: the design for `fleetcom-mcp --version` and the checks and ordering in `scripts/promote.sh`. Does NOT hold test cases or review findings (`promote-hardening-tests.md`).
 
-Status: built on branch `promote-hardening`; reviewed; awaiting merge. Investigated against `main` at `ed1fdc6`, with uv 0.13.6 and Python 3.11. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch D, which holds the code for each step.
+Status: merged to `main` as `dd13e30` on 2026-11-14; not yet promoted. Investigated against `main` at `ed1fdc6`, with uv 0.13.6 and Python 3.11. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch D, which holds the code for each step.
 
 ## Goal
 

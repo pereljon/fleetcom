@@ -1186,7 +1186,7 @@ echo "promoted from git sha: $GIT_SHA"
 - [x] **Step 4:** Add to `CHANGELOG.md`: "Add `fleetcom-mcp --version`." "Fix `scripts/promote.sh`: require a clean `main`, run the tests and linters, swap the skill in place, install with `uv.lock` constraints, and stamp `mcp.promoted-sha` only after an install."
 - [x] **Step 5:** Mark resolved in `docs/ISSUES.md`: the three `promote.sh` items and the deploy-docs item.
 - [x] **Step 6:** Dispatch a reviewer subagent ("Code review before a merge"). Record findings in `promote-hardening-tests.md`.
-- [ ] **Step 7:** Commit the docs. Ask the user to approve the merge. After the merge, run the tests and linters on `main`.
+- [x] **Step 7:** Commit the docs. Ask the user to approve the merge. After the merge, run the tests and linters on `main`.
 
 ---
 
