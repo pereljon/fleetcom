@@ -31,7 +31,10 @@ def get(conn, id_: str) -> dict | None:
 def list_in_range(
     conn, *, start: str, end: str, limit: int = util.DEFAULT_LIMIT
 ) -> list[dict]:
-    start, end = util.to_utc(start), util.to_utc(end)
+    bounds = {"start": start, "end": end}
+    if "" in bounds.values():
+        raise ValueError("start and end must not be empty")
+    start, end = util.normalize_times(bounds, TIME_FIELDS).values()
     rows = conn.execute(
         "SELECT * FROM events WHERE start >= ? AND start <= ? ORDER BY start LIMIT ?",
         (start, end, limit),
