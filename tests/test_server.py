@@ -303,3 +303,59 @@ async def test_a_locked_database_is_a_tool_error_with_a_reason(tmp_path):
         holder.rollback()
         holder.close()
         conn.close()
+
+
+async def test_an_unparseable_time_is_a_tool_error_naming_the_field(server):
+    async with Client(server) as client:
+        res = await asyncio.wait_for(
+            client.call_tool(
+                "task_create", {"summary": "x", "created_by": "a", "remind_at": "soon"}
+            ),
+            timeout=10,
+        )
+    assert res.is_error is True
+    assert "remind_at" in res.content[0].text
+
+
+async def test_empty_string_clears_a_time_through_the_tools(tmp_path):
+    conn = db.connect(str(tmp_path / "fleetcom.db"), create=True)
+    db.migrate(conn)
+    async with Client(build_server(conn)) as client:
+        task = await asyncio.wait_for(
+            client.call_tool(
+                "task_create",
+                {"summary": "x", "created_by": "a", "due": "2026-11-02T09:00:00Z"},
+            ),
+            timeout=10,
+        )
+        task_id = task.structured_content["id"]
+        event = await asyncio.wait_for(
+            client.call_tool(
+                "event_create",
+                {
+                    "summary": "x",
+                    "created_by": "a",
+                    "start": "2026-11-02T09:00:00Z",
+                    "end": "2026-11-02T10:00:00Z",
+                },
+            ),
+            timeout=10,
+        )
+        event_id = event.structured_content["id"]
+        cleared_task = await asyncio.wait_for(
+            client.call_tool("task_update", {"task_id": task_id, "due": ""}),
+            timeout=10,
+        )
+        cleared_event = await asyncio.wait_for(
+            client.call_tool("event_update", {"event_id": event_id, "end": ""}),
+            timeout=10,
+        )
+    assert cleared_task.is_error is False
+    assert cleared_task.structured_content["ok"] is True
+    assert cleared_event.is_error is False
+    assert cleared_event.structured_content["ok"] is True
+    assert tasks.get(conn, task_id)["due"] is None
+    assert (
+        conn.execute("SELECT end FROM events WHERE id = ?", (event_id,)).fetchone()[0]
+        is None
+    )

@@ -6,6 +6,7 @@ from . import crud, util
 
 TABLE = "events"
 FIELDS = {"summary", "description", "start", "end", "location"}
+TIME_FIELDS = ("start", "end")
 
 
 def create(
@@ -18,8 +19,7 @@ def create(
         created_by=created_by,
         summary=summary,
         description=description,
-        start=start,
-        end=end,
+        **util.normalize_times({"start": start, "end": end}, TIME_FIELDS),
         location=location,
     )
 
@@ -31,6 +31,10 @@ def get(conn, id_: str) -> dict | None:
 def list_in_range(
     conn, *, start: str, end: str, limit: int = util.DEFAULT_LIMIT
 ) -> list[dict]:
+    bounds = {"start": start, "end": end}
+    if "" in bounds.values():
+        raise ValueError("start and end must not be empty")
+    start, end = util.normalize_times(bounds, TIME_FIELDS).values()
     rows = conn.execute(
         "SELECT * FROM events WHERE start >= ? AND start <= ? ORDER BY start LIMIT ?",
         (start, end, limit),
@@ -39,6 +43,7 @@ def list_in_range(
 
 
 def update(conn, id_: str, **fields) -> bool:
+    fields = util.normalize_times(fields, TIME_FIELDS)
     return crud.update(conn, TABLE, FIELDS, id_, **fields)
 
 

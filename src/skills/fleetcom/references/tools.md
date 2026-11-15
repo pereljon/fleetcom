@@ -14,6 +14,7 @@ List tools return `truncated` first, and `limit` runs from 1 to 1,000,000 (defau
 - `task_list(due_now=True)` — everything not yet completed whose `remind_at` or `due` has passed.
 - `task_list(status="completed")` — the review queue, with unreviewed rows first.
 - `task_update(task_id="...", status="in-progress")` — claim/advance a task.
+- `task_update(task_id="...", due="")`: clear `due`. `remind_at=""` clears the reminder in the same way.
 - `task_update(task_id="...", status="blocked", blocked_reason="waiting on vendor callback")` — blocked requires a reason.
 - `task_update(task_id="...", status="completed", result_summary="cert renewed, expires 2027-10-01")` — mark done with evidence.
 - `task_delete(task_id="...")` — remove a task.
@@ -23,8 +24,9 @@ List tools return `truncated` first, and `limit` runs from 1 to 1,000,000 (defau
 ## Events
 
 - `event_create(summary="fleet standup", start="2026-09-15T09:00:00Z", end="2026-09-15T09:30:00Z", created_by="hermes:cos")` — a scheduled meeting.
-- `event_list(start="2026-09-01T00:00:00Z", end="2026-09-30T23:59:59Z")` — everything this month.
+- `event_list(start="2026-09-01T00:00:00Z", end="2026-09-30T23:59:59Z")`: everything this month. Both bounds are required and must not be empty; a bound that is not ISO-8601 is an error that names it.
 - `event_update(event_id="...", location="conference room B")` — change a field.
+- `event_update(event_id="...", end="")`: clear `end`. `start` cannot be cleared.
 - `event_delete(event_id="...")` — remove an event.
 
 ## Contacts

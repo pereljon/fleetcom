@@ -259,3 +259,100 @@ def test_connect_opens_a_database_with_an_older_schema_version(tmp_path):
     old.commit()
     old.close()
     db.connect(path).close()
+
+
+def _raw_task(conn, id_, due=None, remind_at=None):
+    with conn:
+        conn.execute(
+            "INSERT INTO tasks (id, summary, created_by, created_at, updated_at, due, remind_at) "
+            "VALUES (?, 'x', 'a', 't', 't', ?, ?)",
+            (id_, due, remind_at),
+        )
+
+
+def test_normalize_stored_times_fixes_offsets_and_blanks(conn):
+    _raw_task(conn, "t1", due="2026-11-02T09:00:00-08:00")
+    _raw_task(conn, "t2", remind_at="")
+    _raw_task(conn, "t3", due="2026-11-02T09:00:00Z")
+    _raw_task(conn, "t4", due="next tuesday")
+    with conn:
+        conn.execute(
+            "INSERT INTO events (id, summary, start, end, created_by, created_at, updated_at) "
+            "VALUES ('e1', 'x', '2026-11-02T09:00:00-08:00', '2026-11-02T10:00:00-08:00', 'a', 't', 't')"
+        )
+
+    assert db.normalize_stored_times(conn) == (3, [("tasks", "t4")])
+    assert not conn.in_transaction
+
+    other = sqlite3.connect(conn.execute("PRAGMA database_list").fetchone()[2])
+    try:
+        assert other.execute("SELECT due FROM tasks WHERE id = 't1'").fetchone() == (
+            "2026-11-02T17:00:00Z",
+        )
+    finally:
+        other.close()
+
+    def value(table, column, id_):
+        return conn.execute(
+            f"SELECT {column} FROM {table} WHERE id = ?", (id_,)
+        ).fetchone()[0]
+
+    assert value("tasks", "due", "t1") == "2026-11-02T17:00:00Z"
+    assert value("tasks", "remind_at", "t2") is None
+    assert value("tasks", "due", "t4") == "next tuesday"
+    assert value("tasks", "updated_at", "t1") == "t"
+    assert (value("events", "start", "e1"), value("events", "end", "e1")) == (
+        "2026-11-02T17:00:00Z",
+        "2026-11-02T18:00:00Z",
+    )
+
+
+def test_normalize_stored_times_lists_row_that_breaks_a_constraint(conn):
+    with conn:
+        conn.execute(
+            "INSERT INTO events (id, summary, start, end, created_by, created_at, updated_at) "
+            "VALUES ('e1', 'x', '2026-11-02T10:00:00-08:00', '2026-11-02T11:00:00Z', 'a', 't', 't')"
+        )
+    _raw_task(conn, "t1", due="2026-11-02T09:00:00-08:00")
+
+    assert db.normalize_stored_times(conn) == (1, [("events", "e1")])
+
+    row = conn.execute("SELECT start, end FROM events WHERE id = 'e1'").fetchone()
+    assert (row["start"], row["end"]) == (
+        "2026-11-02T10:00:00-08:00",
+        "2026-11-02T11:00:00Z",
+    )
+    due = conn.execute("SELECT due FROM tasks WHERE id = 't1'").fetchone()[0]
+    assert due == "2026-11-02T17:00:00Z"
+
+
+def test_normalize_stored_times_rewrites_readable_time_beside_unreadable(conn):
+    _raw_task(conn, "t1", due="next tuesday", remind_at="2026-11-02T09:00:00-08:00")
+
+    assert db.normalize_stored_times(conn) == (1, [("tasks", "t1")])
+
+    row = conn.execute("SELECT due, remind_at FROM tasks WHERE id = 't1'").fetchone()
+    assert (row["due"], row["remind_at"]) == ("next tuesday", "2026-11-02T17:00:00Z")
+
+
+def test_normalize_stored_times_writes_nothing_when_clean(conn):
+    _raw_task(conn, "t1", due="2026-11-02T09:00:00Z")
+    assert db.normalize_stored_times(conn) == (0, [])
+
+
+def test_normalize_stored_times_skips_when_locked(tmp_path):
+    path = str(tmp_path / "fleetcom.db")
+    conn = db.connect(path, create=True)
+    db.migrate(conn)
+    _raw_task(conn, "t1", due="2026-11-02T09:00:00-08:00")
+    conn.execute("PRAGMA busy_timeout = 0")
+    holder = sqlite3.connect(path)
+    holder.execute("BEGIN IMMEDIATE")
+    try:
+        assert db.normalize_stored_times(conn) == (0, [])
+        assert not conn.in_transaction
+    finally:
+        holder.rollback()
+        holder.close()
+    assert db.normalize_stored_times(conn) == (1, [])
+    conn.close()

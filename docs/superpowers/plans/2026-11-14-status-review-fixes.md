@@ -569,7 +569,7 @@ def migrate(conn: sqlite3.Connection) -> None:
 - [x] **Step 4:** Update `dev/SKELETON.md` and `dev/CODEMAP.md` for `connect(create=)`, `_parse_args`, and `migrate`.
 - [x] **Step 5:** Mark resolved in `docs/ISSUES.md`: the wrong-`--db` item, the lock item, and the file-mode item.
 - [x] **Step 6:** Dispatch a reviewer subagent ("Code review before a merge"). Record findings in `db-open-safety-tests.md`.
-- [/] **Step 7:** Commit the docs. Ask the user to approve the merge. After the merge, run the tests and linters on `main`.
+- [x] **Step 7:** Commit the docs. Ask the user to approve the merge. After the merge, run the tests and linters on `main`.
 
 ---
 
@@ -614,13 +614,13 @@ def migrate(conn: sqlite3.Connection) -> None:
 **Files:**
 - Create: `dev/features/utc-timestamps.md`, `dev/features/utc-timestamps-tests.md`
 
-- [ ] **Step 1:** Run `git switch -c utc-timestamps` from an up-to-date `main` that includes Branch B.
-- [ ] **Step 2:** Run the tests and linters and record the baseline.
-- [ ] **Step 3:** With the user's go-ahead, run a read-only count on the live database: rows per table and column that fail the GLOB above, and how many of those `to_utc` cannot parse. Open it with `sqlite3 "file:$HOME/.fleetcom/fleetcom.db?mode=ro" -cmd ".timeout 5000"`. Record the counts, not the values, in the design doc.
-- [ ] **Step 4:** Load `maintaining-dev-docs`. Write the design doc from the Design section above, with the answers to Q2 and Q3.
-- [ ] **Step 5:** Write the test plan with the cases from Tasks C2 to C4 and the live checks from Task E3.
-- [ ] **Step 6:** Review the test plan with the user. Do not continue until the user confirms it.
-- [ ] **Step 7:** Commit both docs on the branch.
+- [x] **Step 1:** Run `git switch -c utc-timestamps` from an up-to-date `main` that includes Branch B.
+- [x] **Step 2:** Run the tests and linters and record the baseline.
+- [x] **Step 3:** With the user's go-ahead, run a read-only count on the live database: rows per table and column that fail the GLOB above, and how many of those `to_utc` cannot parse. Open it with `sqlite3 "file:$HOME/.fleetcom/fleetcom.db?mode=ro" -cmd ".timeout 5000"`. Record the counts, not the values, in the design doc.
+- [x] **Step 4:** Load `maintaining-dev-docs`. Write the design doc from the Design section above, with the answers to Q2 and Q3.
+- [x] **Step 5:** Write the test plan with the cases from Tasks C2 to C4 and the live checks from Task E3.
+- [x] **Step 6:** Review the test plan with the user. Do not continue until the user confirms it.
+- [x] **Step 7:** Commit both docs on the branch.
 
 ### Task C2: `util.to_utc` and `util.normalize_times`
 
@@ -631,7 +631,7 @@ def migrate(conn: sqlite3.Connection) -> None:
 **Interfaces:**
 - Produces: `util.to_utc(value: str | None) -> str | None`; `util.normalize_times(fields: dict, names: tuple[str, ...]) -> dict`. Both raise `ValueError` for an unparseable value.
 
-- [ ] **Step 1: Write the failing tests** in `tests/test_util.py`:
+- [x] **Step 1: Write the failing tests** in `tests/test_util.py`:
 
 ```python
 import pytest
@@ -685,9 +685,9 @@ def test_normalize_times_names_the_field_in_errors():
 
 If Q2 is not approved, replace `test_to_utc_clears_on_empty_string` with a test that `""` raises `ValueError`.
 
-- [ ] **Step 2: Run and confirm failure.** Run `uv run pytest tests/test_util.py -q`. Expected: `AttributeError` for `to_utc`.
+- [x] **Step 2: Run and confirm failure.** Run `uv run pytest tests/test_util.py -q`. Expected: `AttributeError` for `to_utc`.
 
-- [ ] **Step 3: Implement** in `src/fleetcom/util.py`:
+- [x] **Step 3: Implement** in `src/fleetcom/util.py`:
 
 ```python
 _UTC_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -726,8 +726,8 @@ def normalize_times(fields: dict, names: tuple[str, ...]) -> dict:
 
 If Q2 is not approved, drop `or value == ""` so `""` fails to parse.
 
-- [ ] **Step 4: Run the tests.** Expected: all pass.
-- [ ] **Step 5: Commit** `src/fleetcom/util.py` and `tests/test_util.py`.
+- [x] **Step 4: Run the tests.** Expected: all pass.
+- [x] **Step 5: Commit** `src/fleetcom/util.py` and `tests/test_util.py`.
 
 ### Task C3: Normalize on every write and range query
 
@@ -739,7 +739,7 @@ If Q2 is not approved, drop `or value == ""` so `""` fails to parse.
 - Consumes: `util.normalize_times`, `util.to_utc` from Task C2.
 - Produces: module constants `tasks.TIME_FIELDS = ("due", "remind_at")` and `events.TIME_FIELDS = ("start", "end")`, which Task C4 reuses.
 
-- [ ] **Step 1: Write the failing tests.** In `tests/test_tasks.py`:
+- [x] **Step 1: Write the failing tests.** In `tests/test_tasks.py`:
 
 ```python
 from datetime import UTC, datetime, timedelta, timezone
@@ -826,17 +826,17 @@ async def test_an_unparseable_time_is_a_tool_error_naming_the_field(server):
 
 If Q2 is not approved, replace `test_update_with_empty_string_clears_due` with a test that `due=""` raises `ValueError`.
 
-- [ ] **Step 2: Run and confirm failure.** Run `uv run pytest tests/test_tasks.py tests/test_events.py tests/test_server.py -q`. Expected: stored values keep their offsets, the offset task appears in `due_now`, and no error is raised for `"soon"`.
+- [x] **Step 2: Run and confirm failure.** Run `uv run pytest tests/test_tasks.py tests/test_events.py tests/test_server.py -q`. Expected: stored values keep their offsets, the offset task appears in `due_now`, and no error is raised for `"soon"`.
 
-- [ ] **Step 3: Implement.** In `src/fleetcom/tasks.py`, add `TIME_FIELDS = ("due", "remind_at")`. In `create`, pass `**util.normalize_times({"due": due, "remind_at": remind_at}, TIME_FIELDS)` in place of the two arguments. At the top of `update`, add `fields = util.normalize_times(fields, TIME_FIELDS)`.
+- [x] **Step 3: Implement.** In `src/fleetcom/tasks.py`, add `TIME_FIELDS = ("due", "remind_at")`. In `create`, pass `**util.normalize_times({"due": due, "remind_at": remind_at}, TIME_FIELDS)` in place of the two arguments. At the top of `update`, add `fields = util.normalize_times(fields, TIME_FIELDS)`.
 
 In `src/fleetcom/events.py`, add `TIME_FIELDS = ("start", "end")`. In `create`, pass `**util.normalize_times({"start": start, "end": end}, TIME_FIELDS)`. At the top of `update`, add `fields = util.normalize_times(fields, TIME_FIELDS)`. At the top of `list_in_range`, add `start, end = util.to_utc(start), util.to_utc(end)`.
 
-- [ ] **Step 4: Update the tool docstrings** in `server.py`. For `task_create` and `task_update`: "Times are ISO-8601; fleetcom stores them in UTC, reads a time without an offset as UTC, and rejects anything it cannot parse." For `task_update`, if Q2 is approved: "due='' or remind_at='' clears the field." For `event_create`, `event_update`, and `event_list`, add the same storage sentence.
+- [x] **Step 4: Update the tool docstrings** in `server.py`. For `task_create` and `task_update`: "Times are ISO-8601; fleetcom stores them in UTC, reads a time without an offset as UTC, and rejects anything it cannot parse." For `task_update`, if Q2 is approved: "due='' or remind_at='' clears the field." For `event_create`, `event_update`, and `event_list`, add the same storage sentence.
 
-- [ ] **Step 5: Run the full suite and linters.** Expected: all pass. A list-truncation test that inserts raw times through SQL is unaffected, because only the entity functions normalize.
+- [x] **Step 5: Run the full suite and linters.** Expected: all pass. A list-truncation test that inserts raw times through SQL is unaffected, because only the entity functions normalize.
 
-- [ ] **Step 6: Commit** the changed source and test files.
+- [x] **Step 6: Commit** the changed source and test files.
 
 ### Task C4: Repair stored rows at startup
 
@@ -848,7 +848,7 @@ In `src/fleetcom/events.py`, add `TIME_FIELDS = ("start", "end")`. In `create`, 
 - Consumes: `util.to_utc`; `tasks.TIME_FIELDS`, `events.TIME_FIELDS` are restated as literals in `db.py`, because `db` must not import the entity modules.
 - Produces: `db.normalize_stored_times(conn) -> tuple[int, int]`, returning (rows fixed, values left).
 
-- [ ] **Step 1: Write the failing tests** in `tests/test_db.py`:
+- [x] **Step 1: Write the failing tests** in `tests/test_db.py`:
 
 ```python
 def _raw_task(conn, id_, due=None, remind_at=None):
@@ -912,9 +912,9 @@ def test_normalize_stored_times_skips_when_locked(tmp_path):
 
 Under Q2 rejected, `""` is unparseable: change the first test's expectation to `(2, 2)` and assert `t2` keeps `""`.
 
-- [ ] **Step 2: Run and confirm failure.** Expected: `AttributeError` for `normalize_stored_times`.
+- [x] **Step 2: Run and confirm failure.** Expected: `AttributeError` for `normalize_stored_times`.
 
-- [ ] **Step 3: Implement** in `src/fleetcom/db.py` (add `from . import util`):
+- [x] **Step 3: Implement** in `src/fleetcom/db.py` (add `from . import util`):
 
 ```python
 # Literals, not caller input: these names are interpolated into SQL.
@@ -985,20 +985,20 @@ In `server.main`, after `db.migrate(conn)`:
         )
 ```
 
-- [ ] **Step 4: Run the full suite and linters.** Expected: all pass.
-- [ ] **Step 5: Commit** `src/fleetcom/db.py`, `src/fleetcom/server.py`, and `tests/test_db.py`.
+- [x] **Step 4: Run the full suite and linters.** Expected: all pass.
+- [x] **Step 5: Commit** `src/fleetcom/db.py`, `src/fleetcom/server.py`, and `tests/test_db.py`.
 
 ### Task C5: Docs and merge
 
 **Files:**
 - Modify: `src/skills/fleetcom/SKILL.md`, `src/skills/fleetcom/references/tools.md`, `CHANGELOG.md`, `dev/SKELETON.md` (Timestamps invariant; Logic Flow first bullet), `dev/CODEMAP.md` (util, db rows), `docs/ISSUES.md`, the feature's docs.
 
-- [ ] **Step 1:** In `SKILL.md`, replace "Write `due` and `remind_at` as UTC... does not validate them." with: "Write times in ISO-8601. Fleetcom stores them in UTC, reads a time without an offset as UTC, and rejects anything it cannot parse. Pass `""` to clear `due`, `remind_at`, or `end`." Drop the last sentence if Q2 is not approved.
-- [ ] **Step 2:** Add a clearing example to `references/tools.md`: `task_update(task_id="...", due="")`.
-- [ ] **Step 3:** Rewrite the Timestamps invariant in `dev/SKELETON.md`: every stored time is in `now_iso()` format because entity writes normalize and startup repairs, except values the repair could not parse.
-- [ ] **Step 4:** Add to `CHANGELOG.md`: "Fix `due_now` and `agenda_today` misjudging times with a UTC offset: times are stored in UTC, and existing rows are repaired at startup." "Reject unparseable times." "Let `""` clear `due`, `remind_at`, and `end`."
-- [ ] **Step 5:** In `docs/ISSUES.md`, mark the offset bug and the `due=""` item resolved. Mark the duplicate Planned item ("`due`, `remind_at`, `start`, and `end` are unvalidated strings") resolved by the same branch.
-- [ ] **Step 6:** Dispatch a reviewer subagent ("Code review before a merge"). Ask it to check the events `CHECK` path and the repair's lock handling specifically. Record findings in `utc-timestamps-tests.md`.
+- [x] **Step 1:** In `SKILL.md`, replace "Write `due` and `remind_at` as UTC... does not validate them." with: "Write times in ISO-8601. Fleetcom stores them in UTC, reads a time without an offset as UTC, and rejects anything it cannot parse. Pass `""` to clear `due`, `remind_at`, or `end`." Drop the last sentence if Q2 is not approved.
+- [x] **Step 2:** Add a clearing example to `references/tools.md`: `task_update(task_id="...", due="")`.
+- [x] **Step 3:** Rewrite the Timestamps invariant in `dev/SKELETON.md`: every stored time is in `now_iso()` format because entity writes normalize and startup repairs, except values the repair could not parse.
+- [x] **Step 4:** Add to `CHANGELOG.md`: "Fix `due_now` and `agenda_today` misjudging times with a UTC offset: times are stored in UTC, and existing rows are repaired at startup." "Reject unparseable times." "Let `""` clear `due`, `remind_at`, and `end`."
+- [x] **Step 5:** In `docs/ISSUES.md`, mark the offset bug and the `due=""` item resolved. Mark the duplicate Planned item ("`due`, `remind_at`, `start`, and `end` are unvalidated strings") resolved by the same branch.
+- [x] **Step 6:** Dispatch a reviewer subagent ("Code review before a merge"). Ask it to check the events `CHECK` path and the repair's lock handling specifically. Record findings in `utc-timestamps-tests.md`.
 - [ ] **Step 7:** Commit the docs. Ask the user to approve the merge. After the merge, run the tests and linters on `main`.
 
 ---

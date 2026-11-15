@@ -1,6 +1,6 @@
 import pytest
 
-from fleetcom import server
+from fleetcom import db, server
 from fleetcom.server import _parse_args
 
 
@@ -59,3 +59,34 @@ def test_main_exits_with_a_message_for_an_empty_file(monkeypatch, tmp_path):
     assert "cannot open database" in message
     assert "not a fleetcom database" in message
     assert path.stat().st_size == 0
+
+
+def test_main_reports_normalized_and_unreadable_rows_on_stderr(
+    monkeypatch, tmp_path, capsys
+):
+    path = str(tmp_path / "fleetcom.db")
+    conn = db.connect(path, create=True)
+    db.migrate(conn)
+    with conn:
+        conn.execute(
+            "INSERT INTO tasks (id, summary, created_by, created_at, updated_at, due) "
+            "VALUES ('fixed-id', 'x', 'a', 't', 't', '2026-11-02T09:00:00-08:00')"
+        )
+        conn.execute(
+            "INSERT INTO tasks (id, summary, created_by, created_at, updated_at, due) "
+            "VALUES ('bad-id', 'x', 'a', 't', 't', 'next tuesday')"
+        )
+    conn.close()
+
+    class StubServer:
+        def run(self, **kwargs):
+            pass
+
+    monkeypatch.setattr(server, "build_server", lambda conn: StubServer())
+    monkeypatch.setattr("sys.argv", ["fleetcom-mcp", "--db", path])
+    server.main()
+
+    err = capsys.readouterr().err
+    assert "normalized times in 1 rows to UTC" in err
+    assert "could not normalize times in tasks bad-id" in err
+    assert "next tuesday" not in err

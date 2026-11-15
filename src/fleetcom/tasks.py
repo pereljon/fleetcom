@@ -25,6 +25,7 @@ FIELDS = {
     "remind_at",
     "result_summary",
 }
+TIME_FIELDS = ("due", "remind_at")
 
 # Appends in SQL so a concurrent edit from another server process isn't overwritten.
 _APPEND_DESCRIPTION = (
@@ -59,8 +60,7 @@ def create(
         summary=summary,
         description=description,
         owner=owner,
-        due=due,
-        remind_at=remind_at,
+        **util.normalize_times({"due": due, "remind_at": remind_at}, TIME_FIELDS),
         status=status,
     )
 
@@ -98,6 +98,7 @@ def list(
 
 
 def update(conn, id_: str, **fields) -> bool:
+    fields = util.normalize_times(fields, TIME_FIELDS)
     status = fields.get("status")
     if status is None or status == "completed":
         return crud.update(conn, TABLE, FIELDS, id_, **fields)
