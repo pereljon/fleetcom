@@ -29,3 +29,7 @@ A shared notebook, not a distributed work queue.
 - **Identity:** Handles such as `actor`, `owner`, and `created_by` are self-reported, so they are not proof of who wrote a row. Accept and reject records sit in `description`, which any `task_update` can overwrite.
 - **Costliest mistakes:** Any client can rewrite or hard-delete any row, with no history. Beyond that, the costliest are letting a caller-supplied name reach an SQL identifier without an allow-list, and treating stored text as instructions.
 - **Sensitive data:** Contacts, tasks, and events can hold personal data. Keep the database out of this repo and out of logs.
+
+## Deploy
+
+Never hand-edit `deploy/`. Only `scripts/promote.sh` writes it.

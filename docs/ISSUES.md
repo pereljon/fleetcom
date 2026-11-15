@@ -30,9 +30,9 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 - [x] Link the fleetcom skill for Hermes (verified 2026-11-01: `~/Claude/-hermes/skills/autonomous-ai-agents/fleetcom` links to `deploy/skills/fleetcom`)
 - [x] Propose commit message for the skill + deployment changes; wait for explicit approval before committing (done: skill and deploy flow committed in `22d93bf`)
 
-- [ ] `scripts/promote.sh`: `--skill-only` stamps `mcp.promoted-sha` for an install that did not happen. `fleetcom-mcp` needs `--version` so a running build can report itself.
-- [ ] `scripts/promote.sh`: widen the guard beyond `src/`, require a clean `main`, and run the tests. `rm -rf` then `cp` can leave consumers with a broken skill.
-- [ ] Document the deploy flow in README, CODEMAP, and `AGENTS.md`, including "never hand-edit `deploy/`".
+- [x] (fixed 2026-11-14 on branch promote-hardening; dev/features/promote-hardening.md) `scripts/promote.sh`: `--skill-only` stamps `mcp.promoted-sha` for an install that did not happen. `fleetcom-mcp` needs `--version` so a running build can report itself.
+- [x] (fixed 2026-11-14 on branch promote-hardening; dev/features/promote-hardening.md) `scripts/promote.sh`: widen the guard beyond `src/`, require a clean `main`, and run the tests. `rm -rf` then `cp` can leave consumers with a broken skill.
+- [x] (fixed 2026-11-14 on branch promote-hardening; dev/features/promote-hardening.md) Document the deploy flow in README, CODEMAP, and `AGENTS.md`, including "never hand-edit `deploy/`".
 - [x] (fixed 2026-11-14 on branch db-open-safety; dev/features/db-open-safety.md) Any wrong `--db` or `FLEETCOM_DB_PATH` silently creates an empty database. `~` is not expanded. Consider an explicit flag to create a new database.
 - [ ] Decide how Codex gets the skill. Codex skill delivery has not been checked.
 - [x] Check `~/Claude/-hermes/db/reconcile-fleet-dbs.sh` (owned by Hermes) for the database path and WAL handling. `fleetcom.db` alone is out of date, because recent data sits in `fleetcom.db-wal`. (resolved 2026-11-01): checked by hermes-manager. The script hardcodes the old path and must not be rerun after the move; see `dev/features/db-move.md`.
@@ -45,11 +45,12 @@ Project state: bugs, planned work, next steps, open questions, and decisions. Re
 - [x] (fixed 2026-11-14 on branch utc-timestamps; dev/features/utc-timestamps.md) `due=""` counts as permanently overdue. `task_update` cannot null a field, so `""` is the obvious way to try clearing one.
 - [ ] During a rollout, while an old server still runs, `events.update` that passes only `start` or only `end` compares a UTC value with the other stored time in offset form, so a valid update can be refused or an invalid one accepted. It ends once every server has restarted. The live database had 0 events on 2026-11-14. Finding R3 in `dev/features/utc-timestamps-tests.md`.
 - [ ] No test checks that the startup repair's old-value guard keeps a value that another server writes between the repair's read and its UPDATE. Finding R5 in `dev/features/utc-timestamps-tests.md`.
-- [ ] `scripts/promote.sh`: the install ignores `uv.lock`, so transitive packages drift from the tested set. A source-only promote may also reuse a stale build (unverified). Consider installing from the lock with `--reinstall`.
+- [x] (fixed 2026-11-14 on branch promote-hardening; dev/features/promote-hardening.md) `scripts/promote.sh`: the install ignores `uv.lock`, so transitive packages drift from the tested set. A source-only promote may also reuse a stale build (unverified). Consider installing from the lock with `--reinstall`. Resolved: the install passes `uv.lock` constraints and `--reinstall`. The pre-merge review confirmed that `--reinstall` rebuilds a source-only change.
+- [ ] `scripts/promote.sh`: files that git ignores, such as `.DS_Store` or editor swap files under `src/`, pass the clean-tree guard, and the script copies them into `deploy/` or installs them. Nothing loads them today. A fix would build from `git archive HEAD`. Finding R2 in `dev/features/promote-hardening-tests.md`.
 
 ## Next steps
 
-- [/] Work through `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, one branch at a time; its checkboxes track progress. As of 2026-11-14, Branch A is merged, and Branch B (`db-open-safety`) is merged as `104283d`. The fix for finding S1 is merged as `5855cef`. Branch C (`utc-timestamps`) is merged as `154a1dd`, not yet promoted. Next: Branch D (`promote-hardening`).
+- [/] Work through `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, one branch at a time; its checkboxes track progress. As of 2026-11-14, Branch A is merged, and Branch B (`db-open-safety`) is merged as `104283d`. The fix for finding S1 is merged as `5855cef`. Branch C (`utc-timestamps`) is merged as `154a1dd`, not yet promoted. Branch D (`promote-hardening`) is built, reviewed, and awaiting merge.
 - [ ] Before the promote (plan, Task E1 Step 3), confirm that no client config passes `--db` with a `~` path. Branch B makes `~` mean the home folder, so such a config would switch from a stray empty database to the live one.
 - [x] A Fable subagent review of the specs and feature docs, written to `docs/reviews/2026-11-14-fable-review.md`. (resolved 2026-11-14): the file exists; finding S1 is fixed and merged as `5855cef`.
 - [x] Promote `list-truncation` and check it through the installed server (done 2026-11-02, `371acda`).

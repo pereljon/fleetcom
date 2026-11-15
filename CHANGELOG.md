@@ -34,3 +34,5 @@ Nothing in this project has been released yet; the entries below reflect the cur
 - Fix `scripts/promote.sh`: pin Python 3.11, and stop `ln` writing a link inside the deployed skill.
 - Add `src/skills/fleetcom/`: fleet-facing skill doc and per-tool usage reference.
 - Deployment: install via `uv tool install --from . fleetcom` for a stable, absolute-path launcher, rather than running from the development checkout.
+- Add `fleetcom-mcp --version`.
+- Fix `scripts/promote.sh`: it requires a clean `main`, a current `uv.lock`, and passing tests and linters, and refuses unknown arguments. It installs with `uv.lock` constraints and checks the installed version before swapping the skill. The skill swap leaves the old skill if the copy fails. It stamps `mcp.promoted-sha` only after an install.

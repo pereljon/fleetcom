@@ -1037,12 +1037,12 @@ In `server.main`, after `db.migrate(conn)`:
 **Files:**
 - Create: `dev/features/promote-hardening.md`, `dev/features/promote-hardening-tests.md`
 
-- [ ] **Step 1:** Run `git switch -c promote-hardening` from an up-to-date `main` that includes Branch B.
-- [ ] **Step 2:** Run the tests and linters and record the baseline.
-- [ ] **Step 3:** Load `maintaining-dev-docs`. Write the design doc from the Design section above.
-- [ ] **Step 4:** Write the test plan with the checks from Tasks D2 and D3.
-- [ ] **Step 5:** Review the test plan with the user. Do not continue until the user confirms it.
-- [ ] **Step 6:** Commit both docs on the branch.
+- [x] **Step 1:** Run `git switch -c promote-hardening` from an up-to-date `main` that includes Branch B.
+- [x] **Step 2:** Run the tests and linters and record the baseline.
+- [x] **Step 3:** Load `maintaining-dev-docs`. Write the design doc from the Design section above.
+- [x] **Step 4:** Write the test plan with the checks from Tasks D2 and D3.
+- [x] **Step 5:** Review the test plan with the user. Do not continue until the user confirms it.
+- [x] **Step 6:** Commit both docs on the branch.
 
 ### Task D2: `fleetcom-mcp --version`
 
@@ -1053,7 +1053,7 @@ In `server.main`, after `db.migrate(conn)`:
 **Interfaces:**
 - Consumes: `_parse_args` from Task B3.
 
-- [ ] **Step 1: Write the failing test** in `tests/test_cli.py`:
+- [x] **Step 1: Write the failing test** in `tests/test_cli.py`:
 
 ```python
 from importlib.metadata import version
@@ -1070,8 +1070,8 @@ def test_version_prints_the_package_version_without_opening_a_database(
     assert not (tmp_path / "missing.db").exists()
 ```
 
-- [ ] **Step 2: Run and confirm failure.** Expected: argparse exits with code 2 for an unknown argument.
-- [ ] **Step 3: Implement.** Add `from importlib.metadata import version` to `server.py`, and in `_parse_args` before `parse_args`:
+- [x] **Step 2: Run and confirm failure.** Expected: argparse exits with code 2 for an unknown argument.
+- [x] **Step 3: Implement.** Add `from importlib.metadata import version` to `server.py`, and in `_parse_args` before `parse_args`:
 
 ```python
     parser.add_argument(
@@ -1079,15 +1079,15 @@ def test_version_prints_the_package_version_without_opening_a_database(
     )
 ```
 
-- [ ] **Step 4: Run the full suite and linters.** Expected: all pass.
-- [ ] **Step 5: Commit** `src/fleetcom/server.py` and `tests/test_cli.py`.
+- [x] **Step 4: Run the full suite and linters.** Expected: all pass.
+- [x] **Step 5: Commit** `src/fleetcom/server.py` and `tests/test_cli.py`.
 
 ### Task D3: Harden `scripts/promote.sh`
 
 **Files:**
 - Modify: `scripts/promote.sh`
 
-- [ ] **Step 1: Rewrite the script:**
+- [x] **Step 1: Rewrite the script:**
 
 ```bash
 #!/usr/bin/env bash
@@ -1169,23 +1169,23 @@ fi
 echo "promoted from git sha: $GIT_SHA"
 ```
 
-- [ ] **Step 2: Check the syntax.** Run `bash -n scripts/promote.sh`. If `shellcheck` is installed, run `shellcheck scripts/promote.sh` and fix its findings; do not add it to the project.
-- [ ] **Step 3: Check that `uv version --short` prints the project version and `uv tool dir --bin` prints the launcher folder** in uv 0.13.6. If it does not, read the version with `uv run python -c "from importlib.metadata import version; print(version('fleetcom'))"` instead, and record which form was used.
-- [ ] **Step 4: Check the guards without promoting.** On the branch, with the script uncommitted, run `scripts/promote.sh --skill-only`. Expected: "the working tree is not clean", and `deploy/` unchanged (`git status` shows only the script, and `stat deploy/mcp.promoted-sha` shows the same time). After committing, run it again on the branch. Expected: "promote only from main", and `deploy/` unchanged.
-- [ ] **Step 5:** Check the constraints export without installing: run the `uv export` line to a temp file and confirm it lists `mcp` at the version in `uv.lock`.
-- [ ] **Step 6: Commit** `scripts/promote.sh`.
+- [x] **Step 2: Check the syntax.** Run `bash -n scripts/promote.sh`. If `shellcheck` is installed, run `shellcheck scripts/promote.sh` and fix its findings; do not add it to the project.
+- [x] **Step 3: Check that `uv version --short` prints the project version and `uv tool dir --bin` prints the launcher folder** in uv 0.13.6. If it does not, read the version with `uv run python -c "from importlib.metadata import version; print(version('fleetcom'))"` instead, and record which form was used.
+- [x] **Step 4: Check the guards without promoting.** On the branch, with the script uncommitted, run `scripts/promote.sh --skill-only`. Expected: "the working tree is not clean", and `deploy/` unchanged (`git status` shows only the script, and `stat deploy/mcp.promoted-sha` shows the same time). After committing, run it again on the branch. Expected: "promote only from main", and `deploy/` unchanged.
+- [x] **Step 5:** Check the constraints in a scratch install: every package in the scratch tool environment matches `uv export --frozen` (`mcp` alone proves nothing, because `pyproject.toml` already bounds it).
+- [x] **Step 6: Commit** `scripts/promote.sh`.
 
 ### Task D4: Docs and merge
 
 **Files:**
 - Modify: `README.md` (a Deploy section), `dev/CODEMAP.md` (a `scripts/promote.sh` row), `AGENTS.md` (one rule), `CHANGELOG.md`, `docs/ISSUES.md`, the feature's docs.
 
-- [ ] **Step 1:** Add a README Deploy section: promote from a clean `main` with `scripts/promote.sh`; what it checks; that it writes `deploy/` and installs `fleetcom-mcp`; that clients must restart to load the new build; `fleetcom-mcp --version` reports the installed build.
-- [ ] **Step 2:** Add a CODEMAP row: "`scripts/promote.sh` | checks a clean `main` and runs the tests, swaps the skill into `deploy/`, installs `fleetcom-mcp` with `uv.lock` constraints, and stamps the promoted SHA".
-- [ ] **Step 3:** Add to `AGENTS.md`, under a new `## Deploy` heading: "Never hand-edit `deploy/`. Only `scripts/promote.sh` writes it." Ask the user to approve this `AGENTS.md` change in the merge request.
-- [ ] **Step 4:** Add to `CHANGELOG.md`: "Add `fleetcom-mcp --version`." "Fix `scripts/promote.sh`: require a clean `main`, run the tests and linters, swap the skill in place, install with `uv.lock` constraints, and stamp `mcp.promoted-sha` only after an install."
-- [ ] **Step 5:** Mark resolved in `docs/ISSUES.md`: the three `promote.sh` items and the deploy-docs item.
-- [ ] **Step 6:** Dispatch a reviewer subagent ("Code review before a merge"). Record findings in `promote-hardening-tests.md`.
+- [x] **Step 1:** Add a README Deploy section: promote from a clean `main` with `scripts/promote.sh`; what it checks; that it writes `deploy/` and installs `fleetcom-mcp`; that clients must restart to load the new build; `fleetcom-mcp --version` reports the installed build.
+- [x] **Step 2:** Add a CODEMAP row: "`scripts/promote.sh` | checks a clean `main` and runs the tests, swaps the skill into `deploy/`, installs `fleetcom-mcp` with `uv.lock` constraints, and stamps the promoted SHA".
+- [x] **Step 3:** Add to `AGENTS.md`, under a new `## Deploy` heading: "Never hand-edit `deploy/`. Only `scripts/promote.sh` writes it." Ask the user to approve this `AGENTS.md` change in the merge request.
+- [x] **Step 4:** Add to `CHANGELOG.md`: "Add `fleetcom-mcp --version`." "Fix `scripts/promote.sh`: require a clean `main`, run the tests and linters, swap the skill in place, install with `uv.lock` constraints, and stamp `mcp.promoted-sha` only after an install."
+- [x] **Step 5:** Mark resolved in `docs/ISSUES.md`: the three `promote.sh` items and the deploy-docs item.
+- [x] **Step 6:** Dispatch a reviewer subagent ("Code review before a merge"). Record findings in `promote-hardening-tests.md`.
 - [ ] **Step 7:** Commit the docs. Ask the user to approve the merge. After the merge, run the tests and linters on `main`.
 
 ---
@@ -1215,7 +1215,7 @@ Promote installs outside the project folder, so `development/AGENTS.md` (Release
 Run each check through the installed `fleetcom-mcp`, against the live database, with the user's go-ahead. Delete every test row afterwards and confirm the delete.
 
 - [ ] **Step 1 (A):** Call `task_update` with a made-up id. Expected: an error that names the id.
-- [ ] **Step 2 (B):** Run `fleetcom-mcp --db /tmp/does-not-exist.db` from the scratchpad. Expected: exit status 1 and the `--create-db` message, and no file created.
+- [ ] **Step 2 (B):** Run `fleetcom-mcp --db <scratch folder>/does-not-exist.db`. Expected: exit status 1 and the `--create-db` message, and no file created.
 - [ ] **Step 3 (C):** After the restart, re-run the read-only count from Task C1 Step 3. Expected: no row with a parseable non-UTC time. Check the Hermes gateway log or a session's MCP log for the `normalized times in N rows` line. Create a task with `due` in `-08:00`, read it back in UTC, then delete it.
 - [ ] **Step 4 (item 5):** Run the list-truncation checks that are still open (`dev/features/list-truncation-tests.md`, Results, "Not checked yet"): `agenda_today` through a Hermes client, and one `task_list` each from Hermes, Claude Code, and Codex. Use an interactive Codex session, because `codex exec` refuses the tool call under approval policy `never`.
 - [ ] **Step 5:** Record the results under `## Results` in each feature's `-tests.md`, and in `list-truncation-tests.md`.
