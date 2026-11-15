@@ -1,7 +1,7 @@
 [project]
 name = "fleetcom"
-version = "0.1.0"
-description = "Shared office primitives (tasks, reminders, events, contacts) for a fleet of AI agents, over MCP."
+version = "0.2.0"
+description = "Shared office primitives (tasks, events, contacts, and a daily agenda) for a fleet of AI agents, over MCP."
 authors = [
     { name = "Jonathan Perel", email = "1195913+pereljon@users.noreply.github.com" }
 ]
