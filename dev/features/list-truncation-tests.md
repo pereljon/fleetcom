@@ -53,7 +53,11 @@ Live, 2026-11-02 at 00:42 PST, after promoting `371acda`:
 - `agenda_today` returned `tasks_truncated` and `events_truncated` first.
 - `limit=-1` returned the error `limit must be between 1 and 1000000`.
 - The test task was deleted, and the table holds 50 tasks again.
-- Not checked yet: `agenda_today` through a Hermes client, and one `task_list` from each of Hermes, Claude Code, and Codex. Each needs its servers restarted first.
+Client checks, 2026-11-15, after release 0.2.0 (`3b693f3`) and the client restarts:
+
+- Claude Code: `task_list(limit=5)` returned 5 rows with `truncated: true`. `agenda_today` returned 29 due tasks with both flags false.
+- Hermes: a `hermes -z` one-shot on the default profile gave the same results.
+- Codex: plain `codex exec` refused the call ("approval policy is never"). `codex exec --approve-for-me` returned 5 rows with `truncated=true`, and Codex loaded the fleetcom skill text in that run.
 
 ## Review findings
 

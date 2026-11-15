@@ -1226,8 +1226,8 @@ Progress on 2026-11-15, not yet recorded in the `-tests.md` files:
 - Step 3: the read-only count found 0 non-UTC values in 65 tasks and 0 events. A due of `2026-11-20T09:00:00-08:00` was stored as `2026-11-20T17:00:00Z`, and the test task was deleted. Log check (with the user's go-ahead, matching lines only): one Claude Code MCP log has `fleetcom-mcp: normalized times in 38 rows to UTC` at `2026-11-15T06:12:55Z`, the first server start after the promote. No `could not normalize` line appears in the Hermes, Claude Code, or Codex logs.
 - Step 4: Claude Code `task_list(limit=5)` returned 5 rows with `truncated: true`, and `agenda_today` returned 29 due tasks with both flags false. A `hermes -z` one-shot on the default profile gave the same results. Codex (after the user updated the sandbox permissions): plain `codex exec` refused the call ("approval policy is never"), and `codex exec --approve-for-me` returned 5 rows with `truncated=true`. Codex also loaded the fleetcom skill text in that run.
 
-- [ ] **Step 5:** Record the results under `## Results` in each feature's `-tests.md`, and in `list-truncation-tests.md`.
-- [ ] **Step 6:** Mark resolved in `docs/ISSUES.md`: the restart and client-check step, and the two Codex confirmation steps if Step 4 covered them.
+- [x] **Step 5:** Record the results under `## Results` in each feature's `-tests.md`, and in `list-truncation-tests.md`.
+- [x] **Step 6:** Mark resolved in `docs/ISSUES.md`: the restart and client-check step, and the two Codex confirmation steps if Step 4 covered them.
 
 ### Task E4: Hermes follow-ups
 

@@ -44,6 +44,11 @@ After the promote and client restarts (plan, Task E3):
 - On the old code, every test errored, because the shared fixture passes `create=True`. Each new test was instead checked against a targeted mutation of the new code, and each mutation failed at least one test (review below).
 - The README's `--create-db` example, run on a scratch path with stdin closed, created the folder with mode 700 and the file with mode 600, and exited 0. A missing path exited 1 with the `--create-db` message and created nothing.
 
+Live, 2026-11-15, after release 0.2.0 (`3b693f3`):
+
+- The installed `fleetcom-mcp` on a missing scratch database exited 1 with the `--create-db` message and created no file.
+- Claude Code, Hermes, and Codex each reached the live database with one `task_list`.
+
 ## Review findings
 
 A subagent reviewed `e932aaa` before the merge on 2026-11-14 (Opus, high effort), limited to findings with a clear execution path. It found no blocker.

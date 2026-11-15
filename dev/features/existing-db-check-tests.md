@@ -34,6 +34,8 @@ After the promote and client restarts (plan, Task E3): run the installed `fleetc
 - With the fix, `uv run pytest -q` gave 125 passed, and 126 after the R2 test. `ruff check` and `ruff format --check` were clean.
 - `uv run fleetcom-mcp --db <scratch>/empty.db < /dev/null` on a zero-byte file exited 1 with the `not a fleetcom database` message, and the file stayed at 0 bytes.
 
+Live, 2026-11-15, after release 0.2.0 (`3b693f3`): the installed binary on a zero-byte scratch file exited 1 with "not a fleetcom database" and left the file at 0 bytes.
+
 ## Review findings
 
 A subagent reviewed the design and this plan on 2026-11-14 (Opus, high effort). It applied the design to a scratch copy, where the full suite passed, and found no correctness defect.

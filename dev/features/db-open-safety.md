@@ -2,7 +2,7 @@
 
 Owns: the design for refusing a missing database file, expanding `~` in database paths, private modes on new database files, and lock errors at startup and in tool calls. Does NOT hold test cases or review findings (`db-open-safety-tests.md`).
 
-Status: merged to `main` on 2026-11-14; not yet promoted. One gap remains: an existing empty or non-fleetcom SQLite file is still initialized without `--create-db` (`docs/reviews/2026-11-14-fable-review.md`, finding S1). Investigated against `main` at `a177129`, SQLite 3.53.1, and Python 3.11.15. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch B.
+Status: merged to `main` on 2026-11-14; shipped in 0.2.0 (`3b693f3`), promoted 2026-11-14. Finding S1 of `docs/reviews/2026-11-14-fable-review.md`, an existing empty or non-fleetcom SQLite file initialized without `--create-db`, is fixed by `dev/features/existing-db-check.md`. Investigated against `main` at `a177129`, SQLite 3.53.1, and Python 3.11.15. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch B.
 
 ## Goal
 

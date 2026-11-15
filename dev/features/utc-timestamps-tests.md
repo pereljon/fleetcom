@@ -52,7 +52,11 @@ After the promote and client restarts (plan, Task E3):
 - After the review follow-ups (`807d9d6`, `b174145`): 156 passed. `ruff check` and `ruff format --check` are clean.
 - Manual run of the real `fleetcom-mcp` on a scratch database: an offset `due` became `17:00:00Z`, a date-only `remind_at` became midnight UTC, and `updated_at` did not change. stderr printed `normalized times in 1 rows to UTC` and `could not normalize times in tasks b`, without the stored value. A second start printed only the second line. Each start exited 0.
 - A held write lock delayed startup by about 13 s in the reviewer's run, not the 5 s busy timeout. This predates the branch, startup still succeeds, and the cause was not investigated.
-- Live checks: not run. They follow the promote (plan, Task E3).
+Live, after release 0.2.0 (`3b693f3`, promoted 2026-11-14) and the client restarts:
+
+- The read-only count found 0 non-UTC values in 65 tasks and 0 events.
+- A task created with `due` `2026-11-20T09:00:00-08:00` read back as `2026-11-20T17:00:00Z`. The test task was deleted.
+- One Claude Code MCP log has `fleetcom-mcp: normalized times in 38 rows to UTC` at `2026-11-15T06:12:55Z`, the first server start after the promote. No `could not normalize` line appears in the Hermes, Claude Code, or Codex logs.
 
 ## Review findings
 

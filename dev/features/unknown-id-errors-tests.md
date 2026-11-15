@@ -40,6 +40,8 @@ After the promote and client restarts (plan, Task E3):
 - The 11 new tests failed on the old code before the fix. The 8 tool cases failed on behavior. The 3 entity tests failed with `AttributeError`, because `crud.NotFoundError` did not exist yet.
 - Two new tests also pass on the old code by design: the no-field update on an existing id, and reject on a task that is not completed. They guard against the new checks catching more than missing rows.
 
+Live, 2026-11-15, after release 0.2.0 (`3b693f3`): `task_update` with id `e3-check-nonexistent-id` through a live client returned `tasks: no row with id 'e3-check-nonexistent-id'`. `task_delete` with a made-up id was not run live.
+
 ## Review findings
 
 A subagent reviewed `c8e9d5c` before the merge on 2026-11-14 (Opus, high effort), limited to findings with a clear execution path. It found none.

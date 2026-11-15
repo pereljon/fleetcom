@@ -71,3 +71,5 @@ The review verified by experiment:
 - A detached HEAD and an unformatted file are refused before any change.
 - An install that fails at resolution leaves the old environment working.
 - `--version` works under `env -i` with no database.
+
+Live, 2026-11-14: the real promote of release 0.2.0 (`3b693f3`) succeeded. The installed launcher prints `fleetcom-mcp 0.2.0`, and both promoted-SHA stamps in `deploy/` equal `3b693f3`.
