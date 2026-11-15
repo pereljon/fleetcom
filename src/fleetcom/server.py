@@ -7,6 +7,7 @@ import functools
 import sqlite3
 import sys
 import threading
+from importlib.metadata import version
 from typing import Any
 
 from mcp.server.mcpserver import MCPServer
@@ -318,6 +319,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--create-db",
         action="store_true",
         help="Create the database, or set up an existing empty file",
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"fleetcom-mcp {version('fleetcom')}"
     )
     args = parser.parse_args(argv)
     args.db = args.db or db.default_db_path()
