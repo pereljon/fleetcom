@@ -17,7 +17,14 @@ DEPLOY_DIR="$REPO_ROOT/deploy"
 SKILL_SRC="$REPO_ROOT/src/skills/fleetcom"
 SKILL_DST="$DEPLOY_DIR/skills/fleetcom"
 SKILL_ONLY=false
-[ "${1:-}" = "--skill-only" ] && SKILL_ONLY=true
+case "$*" in
+  "") ;;
+  --skill-only) SKILL_ONLY=true ;;
+  *)
+    echo "usage: scripts/promote.sh [--skill-only]" >&2
+    exit 2
+    ;;
+esac
 
 cd "$REPO_ROOT"
 
