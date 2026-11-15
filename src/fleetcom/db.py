@@ -7,6 +7,8 @@ import sqlite3
 import time
 from pathlib import Path
 
+from . import util
+
 SCHEMA_VERSION = 1
 WAL_RETRY_SECONDS = 10
 WAL_RETRY_DELAY_SECONDS = 0.02
@@ -145,3 +147,68 @@ def migrate(conn: sqlite3.Connection) -> None:
         (SCHEMA_VERSION,),
     )
     conn.commit()
+
+
+# Literals, not caller input: these names are interpolated into SQL.
+_TIME_COLUMNS = {"tasks": ("due", "remind_at"), "events": ("start", "end")}
+_UTC_GLOB = (
+    "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z"
+)
+
+
+def normalize_stored_times(
+    conn: sqlite3.Connection,
+) -> tuple[int, list[tuple[str, str]]]:
+    """Rewrite stored times in UTC; return (rows fixed, rows left as (table, id)).
+
+    A row is left when a time in it cannot be parsed or its UPDATE breaks a
+    constraint. Old servers can still write offset times until they restart, so
+    this runs at every startup. It reads first, so a clean database costs no write.
+    A held write lock skips the repair and returns (0, []).
+    """
+    plans = []
+    left: list[tuple[str, str]] = []
+    for table, columns in _TIME_COLUMNS.items():
+        dirty = " OR ".join(f"({c} IS NOT NULL AND {c} NOT GLOB ?)" for c in columns)
+        rows = conn.execute(
+            f"SELECT id, {', '.join(columns)} FROM {table} WHERE {dirty}",
+            [_UTC_GLOB] * len(columns),
+        ).fetchall()
+        for row in rows:
+            new = {}
+            unreadable = False
+            for column in columns:
+                try:
+                    new[column] = util.to_utc(row[column])
+                except ValueError:
+                    unreadable = True
+                    new[column] = row[column]
+            if unreadable:
+                left.append((table, row["id"]))
+            if any(new[c] != row[c] for c in columns):
+                plans.append((table, columns, row, new))
+    fixed = 0
+    try:
+        with conn:
+            for table, columns, row, new in plans:
+                sets = ", ".join(f"{c} = ?" for c in columns)
+                guards = " AND ".join(f"{c} IS ?" for c in columns)
+                try:
+                    cur = conn.execute(
+                        f"UPDATE {table} SET {sets} WHERE id = ? AND {guards}",
+                        [
+                            *(new[c] for c in columns),
+                            row["id"],
+                            *(row[c] for c in columns),
+                        ],
+                    )
+                except sqlite3.IntegrityError:
+                    if (table, row["id"]) not in left:
+                        left.append((table, row["id"]))
+                    continue
+                fixed += cur.rowcount
+    except sqlite3.OperationalError as error:
+        if "locked" not in str(error):
+            raise
+        return 0, []
+    return fixed, left

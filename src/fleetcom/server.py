@@ -62,7 +62,9 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
         remind_at: str | None = None,
     ) -> dict[str, Any]:
         """Create a new task. Set remind_at alone for a pure reminder, due alone for
-        a plain deadline, or both for a deadline with advance warning."""
+        a plain deadline, or both for a deadline with advance warning.
+        Times are ISO-8601; fleetcom stores them in UTC, reads a time without an offset as UTC,
+        and rejects anything it cannot parse."""
         task_id = tasks.create(
             conn,
             created_by=created_by,
@@ -112,7 +114,10 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
     ) -> dict[str, Any]:
         """Update a task. Only non-null arguments are changed. status='blocked' requires
         blocked_reason (in this call or already stored on the row). ok=false means no
-        argument changed anything. An unknown id is an error that names the id."""
+        argument changed anything. An unknown id is an error that names the id.
+        Times are ISO-8601; fleetcom stores them in UTC, reads a time without an offset as UTC,
+        and rejects anything it cannot parse.
+        due='' or remind_at='' clears the field."""
         fields = _updated_fields(
             summary=summary,
             description=description,
@@ -160,7 +165,9 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
         end: str | None = None,
         location: str | None = None,
     ) -> dict[str, Any]:
-        """Create a calendar event."""
+        """Create a calendar event.
+        Times are ISO-8601; fleetcom stores them in UTC, reads a time without an offset as UTC,
+        and rejects anything it cannot parse."""
         event_id = events.create(
             conn,
             created_by=created_by,
@@ -178,6 +185,8 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
         start: str, end: str, limit: int = util.DEFAULT_LIMIT
     ) -> dict[str, Any]:
         """List events whose start falls within [start, end] (ISO-8601).
+        Times are ISO-8601; fleetcom stores them in UTC, reads a time without an offset as UTC,
+        and rejects anything it cannot parse.
         truncated=true means rows were cut: try a narrower range first, then a larger
         limit (default 50)."""
         rows, truncated = util.capped(
@@ -196,7 +205,9 @@ def build_server(conn: sqlite3.Connection) -> MCPServer:
         location: str | None = None,
     ) -> dict[str, Any]:
         """Update an event. Only non-null arguments are changed. ok=false means no
-        argument changed anything. An unknown id is an error that names the id."""
+        argument changed anything. An unknown id is an error that names the id.
+        Times are ISO-8601; fleetcom stores them in UTC, reads a time without an offset as UTC,
+        and rejects anything it cannot parse."""
         fields = _updated_fields(
             summary=summary,
             description=description,
@@ -322,6 +333,12 @@ def main() -> None:
     except (OSError, sqlite3.DatabaseError) as error:
         sys.exit(f"fleetcom-mcp: cannot open database {args.db}: {error}")
     db.migrate(conn)
+    fixed, left = db.normalize_stored_times(conn)
+    if fixed:
+        print(f"fleetcom-mcp: normalized times in {fixed} rows to UTC", file=sys.stderr)
+    if left:
+        rows = ", ".join(f"{table} {id_}" for table, id_ in left)
+        print(f"fleetcom-mcp: could not normalize times in {rows}", file=sys.stderr)
     server = build_server(conn)
     server.run(transport="stdio")
 
