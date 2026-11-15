@@ -25,7 +25,7 @@ Nothing in this project has been released yet; the entries below reflect the cur
 - Fix `task_accept` and `task_reject` overwriting a concurrent `description` edit.
 - Fix `due_now` and `agenda_today` misjudging times with a UTC offset. Times are stored in UTC, and existing rows are repaired at every startup. Rows that cannot be repaired are named by table and id on stderr.
 - Reject a `due`, `remind_at`, `start`, or `end` that is not ISO-8601. It was stored and never came due.
-- Let `""` clear `due`, `remind_at`, and `end`. `due=""` used to count as overdue forever.
+- Let `""` clear `due`, `remind_at`, and `end`. `due=""` used to count as overdue forever. The `event_update` tool description says that `end=''` clears `end`.
 - Make `event_list` name a bad bound in its error and refuse an empty one.
 - Fix `reviewed` surviving when a task leaves `completed`.
 - Fix update, delete, accept, and reject tools returning `ok=false` for an unknown id: they now return an error that names the id (`crud.NotFoundError`), so `ok=false` means only that nothing changed or the task is not completed.

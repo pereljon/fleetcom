@@ -1201,7 +1201,7 @@ Promote installs outside the project folder, so `development/AGENTS.md` (Release
 
 - [ ] **Step 1:** Load the `releasing-dev-projects` skill and follow its gate.
 - [ ] **Step 2:** Propose bumping `version` from `0.1.0` to `0.2.0`, and moving the four branches' CHANGELOG lines under a `0.2.0` heading. After the bump, run `uv lock` so the lock's `fleetcom` entry matches, and run `uv lock --check` to confirm. Wait for the user's approval of the commit on `main`, which includes `pyproject.toml`, `uv.lock`, and `CHANGELOG.md`.
-- [ ] **Step 3:** Ask the user or hermes-manager to confirm that every client config (`~/.hermes/config.yaml` and the four Hermes profiles, `~/.claude.json`, `~/.codex/config.toml`) passes `--db` with the absolute path of the existing live database. Branch B makes a wrong path a startup error.
+- [x] **Step 3:** Ask the user or hermes-manager to confirm that every client config (`~/.hermes/config.yaml` and the four Hermes profiles, `~/.claude.json`, `~/.codex/config.toml`) passes `--db` with the absolute path of the existing live database. Branch B makes a wrong path a startup error.
 - [ ] **Step 4:** Ask the user whether to tag, push, or make a GitHub release; the skill holds those steps.
 
 ### Task E2: Promote
