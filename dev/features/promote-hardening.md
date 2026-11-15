@@ -2,11 +2,13 @@
 
 Owns: the design for `fleetcom-mcp --version` and the checks and ordering in `scripts/promote.sh`. Does NOT hold test cases or review findings (`promote-hardening-tests.md`).
 
-Status: designing on branch `promote-hardening`. Investigated against `main` at `ed1fdc6`, with uv 0.13.6 and Python 3.11. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch D, which holds the code for each step.
+Status: built on branch `promote-hardening`; reviewed; awaiting merge. Investigated against `main` at `ed1fdc6`, with uv 0.13.6 and Python 3.11. Plan: `docs/superpowers/plans/2026-11-14-status-review-fixes.md`, Branch D, which holds the code for each step.
 
 ## Goal
 
 A promote must install only the tested, committed build from `main`. It must never leave consumers with a missing skill, or with a new skill beside an old server. Afterwards, the installed server must be able to report which build it is.
+
+The ordering guarantee covers newly started servers. A running client keeps its old server until it restarts, and it may read the new skill meanwhile (whether running clients re-read the skill body was not checked). Clients restart right after a promote.
 
 ## Verified facts
 
@@ -28,10 +30,11 @@ A promote must install only the tested, committed build from `main`. It must nev
 
 1. `fleetcom-mcp --version` prints `fleetcom-mcp <version>` and exits 0. It reads the version with `importlib.metadata.version("fleetcom")` through argparse `action="version"`. It exits during argument parsing, before the database is opened, so it needs no config and no privileges.
 2. `promote.sh` refuses to start, changing nothing, in any of these cases:
-   1. The working tree is not clean (`git status --porcelain` prints anything).
-   2. The current branch is not `main`.
-   3. `uv lock --check` fails. Otherwise `uv run` would rewrite a stale lock partway through, and the export would read the stale lock.
-   4. `uv run pytest -q`, `uv run ruff check`, or `uv run ruff format --check` fails.
+   1. An argument other than `--skill-only` is present. It exits 2 with `usage: scripts/promote.sh [--skill-only]` before any guard runs.
+   2. The working tree is not clean (`git status --porcelain` prints anything).
+   3. The current branch is not `main`.
+   4. `uv lock --check` fails. Otherwise `uv run` would rewrite a stale lock partway through, and the export would read the stale lock.
+   5. `uv run pytest -q`, `uv run ruff check`, or `uv run ruff format --check` fails.
 3. A full promote installs and checks the server before it touches the skill (Fable review finding P3):
    1. It exports the locked versions with `uv export --frozen --no-dev --no-emit-project --no-hashes` to a temp file.
    2. It runs `uv tool install --python 3.11 --from <repo> fleetcom --force --reinstall --constraints <file>`.
@@ -47,7 +50,8 @@ If the install succeeds but a later step fails, the new server is installed and 
 ## Interface change
 
 - New flag: `fleetcom-mcp --version`.
-- `promote.sh` refuses a dirty tree, a branch other than `main`, a stale lock, and failing tests or linters.
+- `promote.sh` refuses an unknown argument (exit 2), a dirty tree, a branch other than `main`, a stale lock, and failing tests or linters.
+- After a promote, restart clients; a running client keeps its old server and may read the new skill meanwhile.
 - A full promote can now fail after the install and before the skill swap. Re-run it after fixing the cause.
 - The version check means each promote that changes code needs a version bump (plan, Task E1). Otherwise the check still passes, but the version no longer tells two builds apart.
 

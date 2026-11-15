@@ -128,6 +128,33 @@ List tools return at most `limit` rows (default 50, maximum 1,000,000) with a le
 
 ---
 
+## Deploy
+
+Promote from a clean `main` with `scripts/promote.sh`, or with `scripts/promote.sh --skill-only` to update only the skill. Promoting is what makes a change live: clients read the skill from `deploy/skills/fleetcom/` and launch the installed `fleetcom-mcp`.
+
+The script refuses to start, and changes nothing, in these cases:
+
+- The working tree is not clean.
+- The current branch is not `main`.
+- `uv.lock` is out of date.
+- `uv run pytest -q`, `uv run ruff check`, or `uv run ruff format --check` fails.
+- It receives an argument other than `--skill-only`. It exits with status 2 and prints its usage line.
+
+A full promote then does these steps in order:
+
+1. Installs `fleetcom-mcp` with the package versions in `uv.lock`.
+2. Checks that the installed `fleetcom-mcp --version` matches the project version. On a mismatch it stops and leaves the skill as it was.
+3. Swaps the skill into `deploy/`. A failed copy leaves the old skill in place.
+4. Writes the promoted commit to `deploy/skills/fleetcom/.promoted-sha` and `deploy/mcp.promoted-sha`.
+
+`--skill-only` skips the install and writes only the skill's `.promoted-sha`. Never hand-edit `deploy/`; only the script writes it.
+
+Running clients keep the old server until they restart, and a running session may read the new skill while its server is still old. Restart the Hermes gateway and every Claude Code and Codex session right after a promote.
+
+`fleetcom-mcp --version` prints the installed build as `fleetcom-mcp <version>`. It exits before the database opens, so it needs no config. See [dev/features/promote-hardening.md](dev/features/promote-hardening.md) for the design.
+
+---
+
 ## License
 
 [MIT](LICENSE) © 2026 Jonathan Perel
